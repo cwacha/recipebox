@@ -38,7 +38,7 @@ $src = $img($recipe->image);
         <div class="d-flex gap-2 flex-wrap no-print">
             <button type="button" class="btn btn-outline-secondary" id="btnPrint"><i class="bi bi-printer"></i> Print</button>
             <a class="btn btn-outline-secondary" href="<?= $e($url('/api/recipes/' . $recipe->id . '/export')) ?>"><i class="bi bi-filetype-json"></i> JSON</a>
-            <a class="btn btn-primary" href="<?= $e($url('/recipes/' . $recipe->id . '/edit')) ?>"><i class="bi bi-pencil"></i> Edit</a>
+            <a class="btn btn-primary" href="<?= $e($url('/recipes/' . $recipe->slug . '/edit')) ?>"><i class="bi bi-pencil"></i> Edit</a>
             <button type="button" class="btn btn-outline-danger" id="btnDelete"><i class="bi bi-trash3"></i> Delete</button>
         </div>
     </div>

@@ -34,7 +34,7 @@ window.Recipes = (function ($) {
         );
         $('#toasts').append($t);
         $t.on('hidden.bs.toast', function () { $t.remove(); });
-        new bootstrap.Toast($t[0], {delay: 3500}).show();
+        new bootstrap.Toast($t[0], {delay: type === 'warning' ? 12000 : 3500}).show();
     }
 
     /** Shows a message on the next page, e.g. after a redirect. */

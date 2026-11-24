@@ -14,6 +14,7 @@ final class PageTest extends TestCase
     private string $dir;
     private Application $app;
     private string $id;
+    private string $slug;
 
     protected function setUp(): void
     {
@@ -28,7 +29,9 @@ final class PageTest extends TestCase
             'steps' => ['Boil the water.', 'Add salt.'],
             'tags' => ['quick'],
         ])));
-        $this->id = json_decode($created->body(), true)['id'];
+        $json = json_decode($created->body(), true);
+        $this->id = $json['id'];
+        $this->slug = $json['slug'];
     }
 
     protected function tearDown(): void
@@ -41,22 +44,34 @@ final class PageTest extends TestCase
     {
         $home = $this->get('/');
         self::assertSame(200, $home->status());
-        self::assertStringContainsString('href="/recipes/' . $this->id . '"', $home->body());
+        self::assertSame('soup-b-of-the-day-b', $this->slug);
+        self::assertStringContainsString('href="/recipes/soup-b-of-the-day-b"', $home->body());
 
-        $show = $this->get('/recipes/' . $this->id);
+        $show = $this->get('/recipes/' . $this->slug);
         self::assertSame(200, $show->status());
         self::assertStringContainsString('<title>Soup &lt;b&gt;of the day&lt;/b&gt; – Recipe Box</title>', $show->body());
         self::assertStringContainsString('1 h 30 min', $show->body());
         self::assertStringContainsString('Boil the water.', $show->body());
         self::assertStringNotContainsString('<b>of the day</b>', $show->body());
 
-        $edit = $this->get('/recipes/' . $this->id . '/edit');
+        $edit = $this->get('/recipes/' . $this->slug . '/edit');
         self::assertSame(200, $edit->status());
         self::assertStringContainsString('data-id="' . $this->id . '"', $edit->body());
         self::assertStringContainsString('value="1 l"', $edit->body());
 
         self::assertStringContainsString('data-id=""', $this->get('/recipes/new')->body());
         self::assertSame(200, $this->get('/import')->status());
+    }
+
+    public function testOldIdUrlsRedirectToTheReadableUrl(): void
+    {
+        $show = $this->get('/recipes/' . $this->id);
+        self::assertSame(301, $show->status());
+        self::assertSame('/recipes/' . $this->slug, $show->headers()['Location']);
+
+        $edit = $this->get('/recipes/' . $this->id . '/edit');
+        self::assertSame(301, $edit->status());
+        self::assertSame('/recipes/' . $this->slug . '/edit', $edit->headers()['Location']);
     }
 
     public function testSearchIsBookmarkable(): void

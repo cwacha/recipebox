@@ -25,15 +25,22 @@
             return;
         }
 
-        const $btn = $(this).prop('disabled', true);
+        const $btn = $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Importing…');
         R.api('POST', '/api/recipes/import', payload)
             .done(function (res) {
-                R.flash(res.imported + (res.imported === 1 ? ' recipe' : ' recipes') + ' imported.');
-                location.href = res.imported === 1 ? R.base + '/recipes/' + encodeURIComponent(res.recipes[0].id) : R.base + '/';
+                let message = res.imported + (res.imported === 1 ? ' recipe' : ' recipes') + ' imported.';
+                const warnings = res.warnings || [];
+                if (warnings.length) {
+                    const more = warnings.length > 3 ? ' … and ' + (warnings.length - 3) + ' more.' : '';
+                    R.flash(message + ' ' + warnings.slice(0, 3).join(' · ') + more, 'warning');
+                } else {
+                    R.flash(message);
+                }
+                location.href = res.imported === 1 ? R.base + '/recipes/' + encodeURIComponent(res.recipes[0].slug) : R.base + '/';
             })
             .fail(function (xhr) {
                 R.showAlert($err, R.errorMessages(xhr));
-                $btn.prop('disabled', false);
+                $btn.prop('disabled', false).html('<i class="bi bi-upload"></i> Import');
             });
     });
 })(jQuery, window.Recipes);

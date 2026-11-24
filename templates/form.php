@@ -10,14 +10,14 @@
 $ingredients = $recipe && $recipe->ingredients !== [] ? $recipe->ingredients : [null, null, null];
 $steps = $recipe && $recipe->steps !== [] ? $recipe->steps : ['', ''];
 $preview = $img($recipe?->image);
-$cancel = $recipe ? $url('/recipes/' . $recipe->id) : $url('/');
+$cancel = $recipe ? $url('/recipes/' . $recipe->slug) : $url('/');
 ?>
 <main class="container py-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="<?= $e($url('/')) ?>">All recipes</a></li>
             <?php if ($recipe): ?>
-                <li class="breadcrumb-item"><a href="<?= $e($url('/recipes/' . $recipe->id)) ?>"><?= $e($recipe->title) ?></a></li>
+                <li class="breadcrumb-item"><a href="<?= $e($url('/recipes/' . $recipe->slug)) ?>"><?= $e($recipe->title) ?></a></li>
             <?php endif; ?>
             <li class="breadcrumb-item active" aria-current="page"><?= $recipe ? 'Edit' : 'New recipe' ?></li>
         </ol>
@@ -57,6 +57,7 @@ $cancel = $recipe ? $url('/recipes/' . $recipe->id) : $url('/');
                     <input type="file" id="f-file" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
                 </div>
                 <div class="invalid-feedback d-block" id="f-image-error"></div>
+                <div class="form-text">A web address is downloaded and saved with the recipe.</div>
             </div>
             <div class="col-lg-4">
                 <label class="form-label" for="f-tags">Tags</label>

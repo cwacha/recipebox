@@ -22,6 +22,7 @@ final readonly class Recipe implements JsonSerializable
      */
     public function __construct(
         public string $id,
+        public string $slug,
         public string $title,
         public string $description,
         public string $category,
@@ -43,21 +44,35 @@ final readonly class Recipe implements JsonSerializable
         return self::fromArray([...$data, 'id' => $id, 'created_at' => $now, 'updated_at' => $now]);
     }
 
-    /** Returns a copy with new content, keeping id and creation date. */
+    /** Returns a copy with new content, keeping id, slug (stable URL) and creation date. */
     public function withData(array $data): self
     {
         return self::fromArray([
             ...$data,
             'id' => $this->id,
+            'slug' => $this->slug,
             'created_at' => $this->createdAt,
             'updated_at' => (new DateTimeImmutable())->format(DateTimeInterface::ATOM),
         ]);
     }
 
+    /** Returns a copy with another picture; unlike withData() this does not count as an edit. */
+    public function withImage(?string $image): self
+    {
+        return self::fromArray([...$this->jsonSerialize(), 'image' => $image]);
+    }
+
+    public function withSlug(string $slug): self
+    {
+        return self::fromArray([...$this->jsonSerialize(), 'slug' => $slug]);
+    }
+
+    /** An empty slug means "not assigned yet"; repositories assign one when saving. */
     public static function fromArray(array $data): self
     {
         return new self(
             id: (string) $data['id'],
+            slug: (string) ($data['slug'] ?? ''),
             title: (string) $data['title'],
             description: (string) ($data['description'] ?? ''),
             category: (string) ($data['category'] ?? ''),
@@ -79,6 +94,7 @@ final readonly class Recipe implements JsonSerializable
     {
         return [
             'id' => $this->id,
+            'slug' => $this->slug,
             'title' => $this->title,
             'description' => $this->description,
             'category' => $this->category,

@@ -15,6 +15,9 @@ use App\Http\Response;
 use App\Http\Router;
 use App\Repository\RecipeRepositoryInterface;
 use App\Repository\RepositoryFactory;
+use App\Service\CurlImageFetcher;
+use App\Service\ImageFetcher;
+use App\Service\ImageLocalizer;
 use App\Service\ImageStorage;
 use App\Service\Seeder;
 use App\Validation\RecipeValidator;
@@ -24,12 +27,16 @@ use Throwable;
 final class Application
 {
     private readonly Router $router;
+    /** @var array<string, mixed> */
+    private readonly array $config;
 
     public function __construct(
         private readonly string $rootDir,
         private readonly ?RecipeRepositoryInterface $repository = null,
         private readonly bool $debug = false,
+        private readonly ?ImageFetcher $fetcher = null,
     ) {
+        $this->config = require $rootDir . '/config/app.php';
         $this->router = $this->buildRouter();
     }
 
@@ -67,7 +74,7 @@ final class Application
 
     private function defaultRepository(): RecipeRepositoryInterface
     {
-        $factory = new RepositoryFactory(require $this->rootDir . '/config/app.php');
+        $factory = new RepositoryFactory($this->config);
 
         $fresh = !$factory->exists();
         $repository = $factory->create();
@@ -81,17 +88,22 @@ final class Application
     private function buildRouter(): Router
     {
         $repository = $this->repository ?? $this->defaultRepository();
-        $images = new ImageStorage($this->rootDir . '/public');
+        $images = new ImageStorage($this->rootDir . '/public', $this->rootDir . '/defaults');
+        $localizer = new ImageLocalizer(
+            $this->fetcher ?? new CurlImageFetcher(allowPrivateHosts: (bool) ($this->config['import_allow_private_hosts'] ?? false)),
+            $images,
+            $this->rootDir . '/public',
+        );
 
-        $recipes = new RecipeController($repository, new RecipeValidator(), $images);
+        $recipes = new RecipeController($repository, new RecipeValidator(), $images, $localizer);
         $uploads = new UploadController($images);
         $pages = new PageController($repository, $this->rootDir . '/templates');
 
         return (new Router())
             ->add('GET', '/', $pages->home(...))
             ->add('GET', '/recipes/new', $pages->create(...))
-            ->add('GET', '/recipes/{id}', $pages->show(...))
-            ->add('GET', '/recipes/{id}/edit', $pages->edit(...))
+            ->add('GET', '/recipes/{slug}', $pages->show(...))
+            ->add('GET', '/recipes/{slug}/edit', $pages->edit(...))
             ->add('GET', '/import', $pages->import(...))
             ->add('GET', '/api/recipes', $recipes->index(...))
             ->add('POST', '/api/recipes', $recipes->store(...))

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Exception\HttpException;
+use InvalidArgumentException;
+use RuntimeException;
 
-/** Stores uploaded recipe images below public/uploads. */
+/** Stores uploaded images below public/uploads and downloaded (imported) images below public/images. */
 final class ImageStorage
 {
     private const MAX_BYTES = 8 * 1024 * 1024;
@@ -17,9 +19,12 @@ final class ImageStorage
         'image/gif' => 'gif',
     ];
     public const PREFIX = 'uploads/';
+    private const DOWNLOAD_DIR = 'images';
 
-    public function __construct(private readonly string $publicDir)
-    {
+    public function __construct(
+        private readonly string $publicDir,
+        private readonly string $defaultsDir = '',
+    ) {
     }
 
     /**
@@ -58,15 +63,86 @@ final class ImageStorage
         return self::PREFIX . $name;
     }
 
-    /** Deletes an image previously stored by this class. Other paths and URLs are ignored. */
-    public function remove(?string $path): void
+    /**
+     * Stores an image that was downloaded during an import in the public images folder, named after the
+     * recipe it belongs to ("images/<slug>.jpg"). An existing file is never overwritten; the name then gets
+     * a number ("<slug>-2.jpg").
+     *
+     * @return string path relative to the public directory, e.g. "images/spaghetti-carbonara.jpg"
+     * @throws InvalidArgumentException when the data is not a supported image
+     */
+    public function storeDownloaded(string $bytes, string $slug): string
     {
-        if ($path === null || preg_match('#^uploads/[a-f0-9]+\.(?:jpg|png|webp|gif)$#', $path) !== 1) {
+        $extension = $this->assertImage($bytes);
+
+        $dir = $this->publicDir . '/' . self::DOWNLOAD_DIR . '/';
+        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+            throw new RuntimeException('the image folder is not writable');
+        }
+
+        for ($n = 1; $n < 1000; $n++) {
+            $name = $slug . ($n > 1 ? '-' . $n : '') . '.' . $extension;
+            // mode "x" creates the file atomically and fails if it exists, so concurrent imports cannot collide
+            $handle = @fopen($dir . $name, 'xb');
+            if ($handle === false) {
+                continue;
+            }
+
+            $written = fwrite($handle, $bytes);
+            fclose($handle);
+            if ($written !== strlen($bytes)) {
+                @unlink($dir . $name);
+                throw new RuntimeException('the image could not be saved');
+            }
+
+            return self::DOWNLOAD_DIR . '/' . $name;
+        }
+
+        throw new RuntimeException('no free file name for the image');
+    }
+
+    /**
+     * @return string the file extension for the image type
+     * @throws InvalidArgumentException when the data is not a supported image
+     */
+    public function assertImage(string $bytes): string
+    {
+        $extension = self::TYPES[(new \finfo(FILEINFO_MIME_TYPE))->buffer($bytes)] ?? null;
+        if ($extension === null || @getimagesizefromstring($bytes) === false) {
+            throw new InvalidArgumentException('the file is not a JPEG, PNG, WebP or GIF image');
+        }
+
+        return $extension;
+    }
+
+    /**
+     * Deletes an image that belongs to a recipe. Only files this application created are removed:
+     * uploads, and downloaded images that are named after the recipe's slug. The default images, files you
+     * placed in the images folder yourself, and URLs are never touched.
+     */
+    public function remove(?string $path, string $ownerSlug = ''): void
+    {
+        if ($path === null || !$this->isRemovable($path, $ownerSlug)) {
             return;
         }
         $file = $this->publicDir . '/' . $path;
         if (is_file($file)) {
             unlink($file);
         }
+    }
+
+    private function isRemovable(string $path, string $ownerSlug): bool
+    {
+        if (preg_match('#^uploads/[a-f0-9]+\.(?:jpg|png|webp|gif)$#', $path) === 1) {
+            return true;
+        }
+
+        if ($ownerSlug === '' || preg_match('#^' . self::DOWNLOAD_DIR . '/([^/]+)\.(?:jpg|png|webp|gif)$#', $path, $m) !== 1) {
+            return false;
+        }
+
+        $isOwnName = preg_match('/^' . preg_quote($ownerSlug, '/') . '(?:-\d+)?$/', $m[1]) === 1;
+
+        return $isOwnName && !($this->defaultsDir !== '' && file_exists($this->defaultsDir . '/images/' . basename($path)));
     }
 }

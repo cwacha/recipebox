@@ -80,17 +80,21 @@
     $form.on('submit', function (e) {
         e.preventDefault();
         clearErrors();
+        const remote = /^https?:\/\//i.test($('#f-image').val().trim());
         const $btn = $('#btnSave').prop('disabled', true);
+        if (remote) $btn.html('<span class="spinner-border spinner-border-sm"></span> Downloading picture…');
 
         R.api(id ? 'PUT' : 'POST', id ? '/api/recipes/' + encodeURIComponent(id) : '/api/recipes', collect())
             .done(function (r) {
                 saved = true;
-                R.flash(id ? 'Recipe updated.' : 'Recipe created.');
-                location.href = R.base + '/recipes/' + encodeURIComponent(r.id);
+                const base = id ? 'Recipe updated.' : 'Recipe created.';
+                if (r.warnings && r.warnings.length) R.flash(base + ' ' + r.warnings.join(' '), 'warning');
+                else R.flash(base);
+                location.href = R.base + '/recipes/' + encodeURIComponent(r.slug);
             })
             .fail(function (xhr) {
                 showFormErrors(xhr);
-                $btn.prop('disabled', false);
+                $btn.prop('disabled', false).html('<i class="bi bi-check-lg"></i> Save recipe');
             });
     });
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Model\Recipe;
+use App\Service\SlugGenerator;
 
 /**
  * Storage independent behaviour (search, ranking, categories, id generation).
@@ -23,9 +24,55 @@ abstract class AbstractRecipeRepository implements RecipeRepositoryInterface
         return null;
     }
 
+    public function findBySlug(string $slug): ?Recipe
+    {
+        foreach ($this->all() as $recipe) {
+            if ($recipe->slug === $slug) {
+                return $recipe;
+            }
+        }
+
+        return null;
+    }
+
     public function save(Recipe $recipe): Recipe
     {
         return $this->saveMany([$recipe])[0];
+    }
+
+    /**
+     * Makes sure every recipe has a slug that no other recipe uses. Existing slugs are kept as long
+     * as they are free; missing or clashing ones are generated from the title.
+     *
+     * @param  list<Recipe>          $recipes
+     * @param  array<string, string> $stored  slug => recipe id of everything already in storage
+     * @return list<Recipe>
+     */
+    protected function withSlugs(array $recipes, array $stored): array
+    {
+        $taken = $stored;
+        $keep = [];
+        foreach ($recipes as $i => $recipe) {
+            if ($recipe->slug !== '' && ($taken[$recipe->slug] ?? $recipe->id) === $recipe->id) {
+                $taken[$recipe->slug] = $recipe->id;
+                $keep[$i] = true;
+            }
+        }
+
+        $result = [];
+        foreach ($recipes as $i => $recipe) {
+            if (!isset($keep[$i])) {
+                $slug = SlugGenerator::unique(
+                    $recipe->title,
+                    static fn (string $candidate): bool => isset($taken[$candidate]) && $taken[$candidate] !== $recipe->id,
+                );
+                $taken[$slug] = $recipe->id;
+                $recipe = $recipe->withSlug($slug);
+            }
+            $result[] = $recipe;
+        }
+
+        return $result;
     }
 
     public function search(string $query = '', ?string $category = null): array

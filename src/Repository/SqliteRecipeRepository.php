@@ -36,6 +36,11 @@ class SqliteRecipeRepository extends AbstractRecipeRepository
         $this->pdo->exec('PRAGMA journal_mode = WAL');
         $this->pdo->exec('PRAGMA synchronous = NORMAL');
         $this->migrate();
+
+        $legacy = $this->pdo->query("SELECT * FROM recipes WHERE slug = ''")->fetchAll();
+        if ($legacy !== []) {
+            $this->saveMany(array_map($this->hydrate(...), $legacy));
+        }
     }
 
     public function all(): array
@@ -54,12 +59,22 @@ class SqliteRecipeRepository extends AbstractRecipeRepository
         return $row === false ? null : $this->hydrate($row);
     }
 
+    public function findBySlug(string $slug): ?Recipe
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM recipes WHERE slug = :slug');
+        $stmt->execute(['slug' => $slug]);
+        $row = $stmt->fetch();
+
+        return $row === false ? null : $this->hydrate($row);
+    }
+
     public function saveMany(array $recipes): array
     {
         $stmt = $this->pdo->prepare(<<<'SQL'
-            INSERT INTO recipes (id, title, description, category, image, cooking_time, ingredients, steps, tags, created_at, updated_at)
-            VALUES (:id, :title, :description, :category, :image, :cooking_time, :ingredients, :steps, :tags, :created_at, :updated_at)
+            INSERT INTO recipes (id, slug, title, description, category, image, cooking_time, ingredients, steps, tags, created_at, updated_at)
+            VALUES (:id, :slug, :title, :description, :category, :image, :cooking_time, :ingredients, :steps, :tags, :created_at, :updated_at)
             ON CONFLICT(id) DO UPDATE SET
+                slug = excluded.slug,
                 title = excluded.title,
                 description = excluded.description,
                 category = excluded.category,
@@ -73,9 +88,13 @@ class SqliteRecipeRepository extends AbstractRecipeRepository
 
         $this->pdo->exec('BEGIN IMMEDIATE');
         try {
+            $slugs = $this->pdo->query("SELECT slug, id FROM recipes WHERE slug <> ''")->fetchAll(PDO::FETCH_KEY_PAIR);
+            $recipes = $this->withSlugs($recipes, $slugs);
+
             foreach ($recipes as $recipe) {
                 $stmt->execute([
                     'id' => $recipe->id,
+                    'slug' => $recipe->slug,
                     'title' => $recipe->title,
                     'description' => $recipe->description,
                     'category' => $recipe->category,
@@ -110,6 +129,7 @@ class SqliteRecipeRepository extends AbstractRecipeRepository
         $this->pdo->exec(<<<'SQL'
             CREATE TABLE IF NOT EXISTS recipes (
                 id           TEXT PRIMARY KEY,
+                slug         TEXT NOT NULL DEFAULT '',
                 title        TEXT NOT NULL,
                 description  TEXT NOT NULL DEFAULT '',
                 category     TEXT NOT NULL DEFAULT '',
@@ -122,6 +142,13 @@ class SqliteRecipeRepository extends AbstractRecipeRepository
                 updated_at   TEXT NOT NULL
             )
             SQL);
+
+        $columns = array_column($this->pdo->query('PRAGMA table_info(recipes)')->fetchAll(), 'name');
+        if (!in_array('slug', $columns, true)) {
+            $this->pdo->exec("ALTER TABLE recipes ADD COLUMN slug TEXT NOT NULL DEFAULT ''");
+        }
+
+        $this->pdo->exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_recipes_slug ON recipes (slug) WHERE slug <> ''");
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_recipes_updated_at ON recipes (updated_at)');
     }
 

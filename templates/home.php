@@ -57,7 +57,7 @@ $chipUrl = static fn (string $cat): string => $url('/') . ($q !== '' || $cat !==
             <?php foreach ($recipes as $i => $r): ?>
                 <div class="col-12 col-md-6 col-xl-4 fade-in" style="animation-delay: <?= min($i, 8) * 40 ?>ms">
                     <article class="card recipe-card">
-                        <a class="stretched-link-card" href="<?= $e($url('/recipes/' . $r->id)) ?>" aria-label="<?= $e($r->title) ?>"></a>
+                        <a class="stretched-link-card" href="<?= $e($url('/recipes/' . $r->slug)) ?>" aria-label="<?= $e($r->title) ?>"></a>
                         <div class="thumb">
                             <div class="placeholder-icon"><i class="bi bi-egg-fried"></i></div>
                             <?php if ($src = $img($r->image)): ?>

@@ -19,6 +19,11 @@ class JsonFileRecipeRepository extends AbstractRecipeRepository
         if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
             throw new RuntimeException("Cannot create data directory: $dir");
         }
+
+        $legacy = array_values(array_filter($this->read(), static fn (Recipe $r): bool => $r->slug === ''));
+        if ($legacy !== []) {
+            $this->saveMany($legacy);
+        }
     }
 
     public function all(): array
@@ -31,33 +36,38 @@ class JsonFileRecipeRepository extends AbstractRecipeRepository
 
     public function saveMany(array $recipes): array
     {
-        $this->locked(function () use ($recipes): void {
+        return $this->locked(function () use ($recipes): array {
             $byId = [];
+            $slugs = [];
             foreach ($this->read() as $existing) {
                 $byId[$existing->id] = $existing;
+                if ($existing->slug !== '') {
+                    $slugs[$existing->slug] = $existing->id;
+                }
             }
+
+            $recipes = $this->withSlugs($recipes, $slugs);
             foreach ($recipes as $recipe) {
                 $byId[$recipe->id] = $recipe;
             }
             $this->write(array_values($byId));
-        });
 
-        return $recipes;
+            return $recipes;
+        });
     }
 
     public function delete(string $id): bool
     {
-        $deleted = false;
-        $this->locked(function () use ($id, &$deleted): void {
+        return $this->locked(function () use ($id): bool {
             $current = $this->read();
             $remaining = array_values(array_filter($current, static fn (Recipe $r): bool => $r->id !== $id));
             $deleted = count($remaining) !== count($current);
             if ($deleted) {
                 $this->write($remaining);
             }
-        });
 
-        return $deleted;
+            return $deleted;
+        });
     }
 
     /** @return list<Recipe> */
@@ -92,7 +102,12 @@ class JsonFileRecipeRepository extends AbstractRecipeRepository
         }
     }
 
-    private function locked(callable $operation): void
+    /**
+     * @template T
+     * @param  callable(): T $operation
+     * @return T
+     */
+    private function locked(callable $operation): mixed
     {
         $lock = fopen($this->file . '.lock', 'c');
         if ($lock === false || !flock($lock, LOCK_EX)) {
@@ -100,7 +115,7 @@ class JsonFileRecipeRepository extends AbstractRecipeRepository
         }
 
         try {
-            $operation();
+            return $operation();
         } finally {
             flock($lock, LOCK_UN);
             fclose($lock);

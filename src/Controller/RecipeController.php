@@ -11,6 +11,8 @@ use App\Http\Request;
 use App\Http\Response;
 use App\Model\Recipe;
 use App\Repository\RecipeRepositoryInterface;
+use App\Service\ImageFetchException;
+use App\Service\ImageLocalizer;
 use App\Service\ImageStorage;
 use App\Validation\RecipeValidator;
 
@@ -20,6 +22,7 @@ final class RecipeController extends AbstractController
         private readonly RecipeRepositoryInterface $recipes,
         private readonly RecipeValidator $validator,
         private readonly ImageStorage $images,
+        private readonly ImageLocalizer $localizer,
     ) {
     }
 
@@ -41,19 +44,52 @@ final class RecipeController extends AbstractController
 
     public function store(Request $request): Response
     {
-        $recipe = Recipe::create($this->recipes->nextId(), $this->validator->validate($request->json()));
+        $data = $this->validator->validate($request->json());
+        $url = $this->checkedRemoteImage($data['image']);
 
-        return $this->json($this->recipes->save($recipe), 201);
+        // a downloaded picture is named after the slug, which only exists once the recipe is saved
+        $recipe = $this->recipes->save(Recipe::create($this->recipes->nextId(), $url === null ? $data : [...$data, 'image' => '']));
+
+        $warnings = [];
+        if ($url !== null) {
+            [$path, $warning] = $this->localizer->localize($url, $recipe->slug);
+            if ($path !== '') {
+                $recipe = $this->recipes->save($recipe->withImage($path));
+            } elseif ($warning !== null) {
+                $warnings[] = $warning;
+            }
+        }
+
+        return $this->json($warnings === [] ? $recipe : [...$recipe->jsonSerialize(), 'warnings' => $warnings], 201);
     }
 
     public function update(Request $request, string $id): Response
     {
         $existing = $this->findOrFail($id);
-        $updated = $existing->withData($this->validator->validate($request->json()));
-        $this->recipes->save($updated);
+        $data = $this->validator->validate($request->json());
+
+        // an unchanged value is left alone, so recipes that still contain a link can be edited while that site is down
+        $url = $data['image'] === $existing->image ? null : $this->checkedRemoteImage($data['image']);
+        if ($url !== null) {
+            [$path, $warning] = $this->localizer->localize($url, $existing->slug);
+            if ($path === '') {
+                throw new ValidationException(['image' => (string) $warning]);
+            }
+            $data['image'] = $path;
+        }
+
+        $updated = $existing->withData($data);
+        try {
+            $this->recipes->save($updated);
+        } catch (\Throwable $e) {
+            if ($url !== null) {
+                $this->images->remove($updated->image, $existing->slug);
+            }
+            throw $e;
+        }
 
         if ($existing->image !== $updated->image) {
-            $this->removeImageIfUnused($existing->image);
+            $this->removeImageIfUnused($existing->image, $existing->slug);
         }
 
         return $this->json($updated);
@@ -63,12 +99,16 @@ final class RecipeController extends AbstractController
     {
         $existing = $this->findOrFail($id);
         $this->recipes->delete($id);
-        $this->removeImageIfUnused($existing->image);
+        $this->removeImageIfUnused($existing->image, $existing->slug);
 
         return $this->noContent();
     }
 
-    /** Accepts a single recipe object, a list of recipes or {"recipes": [...]}. All or nothing. */
+    /**
+     * Accepts a single recipe object, a list of recipes or {"recipes": [...]}. All or nothing for the
+     * recipes; pictures from other servers are downloaded into this installation, and pictures that
+     * cannot be fetched only produce warnings.
+     */
     public function import(Request $request): Response
     {
         $payload = $request->json();
@@ -97,14 +137,41 @@ final class RecipeController extends AbstractController
             throw new ValidationException($errors);
         }
 
-        $recipes = [];
-        foreach ($validated as $data) {
-            $recipes[] = Recipe::create($this->recipes->nextId(), $data);
-            // nextId() only checks stored recipes; the random id space makes batch collisions negligible
-        }
-        $this->recipes->saveMany($recipes);
+        // Pictures are named after the slug, which the repository assigns when saving: save first, then attach pictures.
+        $pictures = array_column($validated, 'image');
+        $recipes = $this->recipes->saveMany(array_map(
+            fn (array $data): Recipe => Recipe::create($this->recipes->nextId(), [...$data, 'image' => '']),
+            $validated,
+        ));
+        // nextId() only checks stored recipes; the random id space makes batch collisions negligible
 
-        return $this->json(['imported' => count($recipes), 'recipes' => $recipes], 201);
+        $warnings = [];
+        $withPicture = [];
+        foreach ($recipes as $i => $recipe) {
+            [$path, $warning] = $this->localizer->localize($pictures[$i], $recipe->slug);
+            if ($warning !== null) {
+                $warnings[] = 'recipe ' . ($i + 1) . ': ' . $warning;
+            }
+            if ($path !== '') {
+                $withPicture[$i] = $recipe->withImage($path);
+            }
+        }
+
+        if ($withPicture !== []) {
+            try {
+                $saved = $this->recipes->saveMany(array_values($withPicture));
+            } catch (\Throwable $e) {
+                foreach ($this->localizer->created() as $path => $slug) {
+                    $this->images->remove($path, $slug);
+                }
+                throw $e;
+            }
+            foreach (array_keys($withPicture) as $n => $i) {
+                $recipes[$i] = $saved[$n];
+            }
+        }
+
+        return $this->json(['imported' => count($recipes), 'recipes' => $recipes, 'warnings' => $warnings], 201);
     }
 
     public function export(Request $request, string $id): Response
@@ -123,6 +190,26 @@ final class RecipeController extends AbstractController
         );
     }
 
+    /**
+     * Returns the picture URL if the picture is on another server and can be downloaded, null for everything else.
+     *
+     * @throws ValidationException when the picture cannot be downloaded
+     */
+    private function checkedRemoteImage(string $image): ?string
+    {
+        if (!ImageLocalizer::isRemote($image)) {
+            return null;
+        }
+
+        try {
+            $this->localizer->check($image);
+        } catch (ImageFetchException | \InvalidArgumentException $e) {
+            throw new ValidationException(['image' => 'The picture could not be downloaded: ' . $e->getMessage() . '.']);
+        }
+
+        return $image;
+    }
+
     private function findOrFail(string $id): Recipe
     {
         return $this->recipes->find($id) ?? throw new NotFoundException('Recipe not found');
@@ -131,10 +218,10 @@ final class RecipeController extends AbstractController
     /** @return array<string, mixed> the recipe in the same shape that the import accepts */
     private function exportable(Recipe $recipe): array
     {
-        return array_diff_key($recipe->jsonSerialize(), array_flip(['id', 'servings', 'created_at', 'updated_at']));
+        return array_diff_key($recipe->jsonSerialize(), array_flip(['id', 'slug', 'servings', 'created_at', 'updated_at']));
     }
 
-    private function removeImageIfUnused(?string $image): void
+    private function removeImageIfUnused(?string $image, string $ownerSlug): void
     {
         if ($image === null) {
             return;
@@ -144,6 +231,6 @@ final class RecipeController extends AbstractController
                 return;
             }
         }
-        $this->images->remove($image);
+        $this->images->remove($image, $ownerSlug);
     }
 }

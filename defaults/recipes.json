@@ -2,6 +2,7 @@
     "recipes": [
         {
             "id": "a1c0de000001",
+            "slug": "spaghetti-carbonara",
             "title": "Spaghetti Carbonara",
             "description": "The Roman classic: silky egg and pecorino sauce, crispy guanciale and lots of black pepper. No cream needed.",
             "category": "Pasta",
@@ -57,6 +58,7 @@
         },
         {
             "id": "a1c0de000002",
+            "slug": "chicken-tikka-masala",
             "title": "Chicken Tikka Masala",
             "description": "Tender marinated chicken in a creamy, mildly spiced tomato sauce. Perfect with basmati rice and naan.",
             "category": "Curry",
@@ -137,6 +139,7 @@
         },
         {
             "id": "a1c0de000003",
+            "slug": "greek-salad",
             "title": "Greek Salad",
             "description": "Crunchy vegetables, salty feta and good olive oil. Ready in 15 minutes and ideal for hot days.",
             "category": "Salad",
@@ -199,6 +202,7 @@
         },
         {
             "id": "a1c0de000004",
+            "slug": "fluffy-blueberry-pancakes",
             "title": "Fluffy Blueberry Pancakes",
             "description": "Thick, fluffy American-style pancakes with juicy blueberries. A weekend breakfast favourite.",
             "category": "Breakfast",
@@ -263,6 +267,7 @@
         },
         {
             "id": "a1c0de000005",
+            "slug": "creamy-mushroom-risotto",
             "title": "Creamy Mushroom Risotto",
             "description": "Slow-stirred arborio rice with earthy mushrooms, white wine and parmesan. Comfort food at its best.",
             "category": "Rice",
@@ -331,6 +336,7 @@
         },
         {
             "id": "a1c0de000006",
+            "slug": "roasted-tomato-soup",
             "title": "Roasted Tomato Soup",
             "description": "Oven-roasted tomatoes give this soup a deep, sweet flavour. Great with a grilled cheese sandwich.",
             "category": "Soup",

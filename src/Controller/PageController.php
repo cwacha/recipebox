@@ -34,9 +34,12 @@ final class PageController extends AbstractController
         ], 'Recipe Box – your kitchen companion', 'home', ['home.js']));
     }
 
-    public function show(Request $request, string $id): Response
+    public function show(Request $request, string $slug): Response
     {
-        $recipe = $this->findOrFail($id);
+        $recipe = $this->recipes->findBySlug($slug);
+        if ($recipe === null) {
+            return $this->redirectLegacyId($request, $slug, '');
+        }
 
         return $this->html($this->view($request)->page(
             'recipe',
@@ -53,9 +56,11 @@ final class PageController extends AbstractController
         return $this->form($request, null);
     }
 
-    public function edit(Request $request, string $id): Response
+    public function edit(Request $request, string $slug): Response
     {
-        return $this->form($request, $this->findOrFail($id));
+        $recipe = $this->recipes->findBySlug($slug);
+
+        return $recipe === null ? $this->redirectLegacyId($request, $slug, '/edit') : $this->form($request, $recipe);
     }
 
     public function import(Request $request): Response
@@ -86,9 +91,12 @@ final class PageController extends AbstractController
         ], ($recipe ? 'Edit ' . $recipe->title : 'New recipe') . ' – Recipe Box', $recipe ? '' : 'new', ['form.js']));
     }
 
-    private function findOrFail(string $id): Recipe
+    /** Bookmarks made when URLs still contained the id keep working: they are redirected to the readable URL. */
+    private function redirectLegacyId(Request $request, string $key, string $suffix): Response
     {
-        return $this->recipes->find($id) ?? throw new NotFoundException('This recipe does not exist (anymore).');
+        $recipe = $this->recipes->find($key) ?? throw new NotFoundException('This recipe does not exist (anymore).');
+
+        return $this->redirect($request->basePath . '/recipes/' . $recipe->slug . $suffix);
     }
 
     private function view(Request $request): View

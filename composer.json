@@ -4,9 +4,10 @@
     "type": "project",
     "license": "MIT",
     "require": {
-        "php": ">=8.2",
+        "ext-curl": "*",
+        "ext-fileinfo": "*",
         "ext-json": "*",
-        "ext-fileinfo": "*"
+        "php": ">=8.2"
     },
     "require-dev": {
         "phpunit/phpunit": "^11.0"
@@ -34,6 +35,7 @@
         "optimize-autoloader": true
     },
     "suggest": {
-        "ext-pdo_sqlite": "Required to store recipes in SQLite instead of a JSON file"
+        "ext-pdo_sqlite": "Required to store recipes in SQLite instead of a JSON file",
+        "ext-intl": "Better transliteration of titles into URL slugs"
     }
 }

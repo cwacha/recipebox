@@ -13,7 +13,7 @@ composer start          # php -S localhost:8000 -t public
 
 Open <http://localhost:8000>. Run the tests with `composer test`.
 
-Requirements: PHP 8.2+ with `json` and `fileinfo` (plus `pdo_sqlite` for SQLite storage), Composer. Bootstrap, Bootstrap Icons, jQuery and the web fonts
+Requirements: PHP 8.2+ with `json`, `fileinfo` and `curl` (plus `pdo_sqlite` for SQLite storage, `intl` is used for slugs when present), Composer. Bootstrap, Bootstrap Icons, jQuery and the web fonts
 load from CDNs, so the browser needs internet access.
 
 On Apache, point the document root at `public/` (`.htaccess` is included). Under nginx, route unknown paths to `public/index.php`.
@@ -24,20 +24,52 @@ On Apache, point the document root at `public/` (`.htaccess` is included). Under
 | URL | |
 |---|---|
 | `/` | recipe list with search; `/?q=tomato` and `/?category=Soup` are bookmarkable |
-| `/recipes/{id}` | recipe: ingredients, cooking time, numbered steps |
-| `/recipes/{id}/edit` | edit a recipe |
+| `/recipes/{name}` | recipe: ingredients, cooking time, numbered steps, e.g. `/recipes/spaghetti-carbonara` |
+| `/recipes/{name}/edit` | edit a recipe |
 | `/recipes/new` | create a recipe |
 | `/import` | import recipes from JSON |
+
+Recipe URLs use a readable name (slug) generated from the title: umlauts become `ae`/`oe`/`ue`, duplicates get `-2`, `-3`, …
+The slug stays the same when you rename a recipe, so bookmarks keep working. Old links that contain the internal id
+(`/recipes/a1c0de000001`) redirect to the readable URL. Existing recipes get their slug automatically (JSON and SQLite).
 
 ## Features
 
 - Search (title, category, tags, ingredients, description, steps) with ranking and highlighting; category filter chips
 - Every recipe has its own page and URL that can be bookmarked or shared
 - Every recipe shows ingredients for **4 people**, the cooking time and numbered steps; tap ingredients and steps to tick them off while cooking
-- Create / edit recipes in a form, with picture upload or image URL, reorderable steps
-- **Import JSON** (file, drag & drop or paste) – a single recipe, a list, or `{"recipes": [...]}`; all-or-nothing validation
+- Create / edit recipes in a form, with picture upload or image URL (downloaded and saved with the recipe), reorderable steps
+- **Import JSON** (file, drag & drop or paste) – a single recipe, a list, or `{"recipes": [...]}`; all-or-nothing validation. Pictures that are links to other servers are downloaded into `public/images/`, so imported recipes are self-contained (see below)
 - Export one recipe or all recipes as JSON (same format the import accepts)
 - Print view, dark mode, responsive layout
+
+### Image import
+
+When a recipe is imported, its `image` is handled like this:
+
+| `image` value | Result |
+|---|---|
+| `images/carbonara.jpg` (a file of this installation) | kept as is |
+| `https://…` (any other server) | downloaded into `public/images/<recipe-slug>.<ext>` (e.g. `images/spaghetti-carbonara.jpg`), the recipe then points to the local copy |
+| missing file, failed download, not a JPEG/PNG/WebP/GIF | the recipe is imported without a picture and a warning is shown |
+
+Every recipe gets its own file, even if two recipes use the same link (it is downloaded once). A file is never
+overwritten: if `images/pasta.jpg` already exists, the new one becomes `images/pasta-2.jpg`.
+
+When a recipe is deleted (or its picture is replaced), its picture is deleted too, but only if it is named after that
+recipe's slug (`<slug>.<ext>` or `<slug>-2.<ext>`), not used by another recipe and not one of the default images in
+`defaults/images/`. Files with any other name are never touched.
+
+The same applies in the editor: a web address pasted into the *Picture* field is downloaded when you save, and the
+recipe keeps the local copy. If the download fails (or the file is not an image) the form shows the error at the field
+and nothing is saved, so the previous picture stays. A value that has not been changed is never downloaded again, so
+an old recipe that still contains a link can be edited even if that site is gone.
+
+Because anonymous users can trigger downloads, the server only fetches from the public internet: http(s) on ports
+80/443, no credentials in the URL, private/loopback/link-local addresses (e.g. `localhost`, `192.168.x.x`,
+`169.254.169.254`) are refused for the first request and every redirect, files are limited to 8 MB / 15 s, and the content
+must really be an image. To import from a server in your own network, set `RECIPES_IMPORT_ALLOW_PRIVATE_HOSTS=1`
+(or `import_allow_private_hosts` in `config/app.php`). Requires the `curl` PHP extension.
 
 ### JSON format
 
@@ -79,7 +111,7 @@ src/
                    RepositoryFactory (picks the backend from config/app.php)
   View/            View (renders templates inside the layout, escaping helpers)
   Validation/      RecipeValidator
-  Service/         ImageStorage, Seeder
+  Service/         ImageStorage, ImageLocalizer + CurlImageFetcher (image import), SlugGenerator, Seeder
 templates/         layout, home, recipe, form, import, error
 tests/             PHPUnit
 ```
@@ -123,7 +155,7 @@ To reset to the sample recipes, delete the storage file. Your own recipes and up
 |---|---|---|
 | GET | `/api/recipes?q=&category=` | list / search |
 | POST | `/api/recipes` | create |
-| GET / PUT / DELETE | `/api/recipes/{id}` | read / update / delete |
-| POST | `/api/recipes/import` | bulk import |
+| GET / PUT / DELETE | `/api/recipes/{id}` | read / update / delete (the API uses the internal id) |
+| POST | `/api/recipes/import` | bulk import; response includes `warnings` |
 | GET | `/api/recipes/export`, `/api/recipes/{id}/export` | JSON download |
 | POST | `/api/uploads` | multipart image upload (`image`) → `{"path": "uploads/…"}` |

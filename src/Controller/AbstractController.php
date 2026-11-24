@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Http\JsonResponse;
+use App\Http\RedirectResponse;
 use App\Http\Response;
 
 abstract class AbstractController
@@ -29,6 +30,11 @@ abstract class AbstractController
                 ]);
             }
         };
+    }
+
+    protected function redirect(string $location, int $status = 301): RedirectResponse
+    {
+        return new RedirectResponse($location, $status);
     }
 
     protected function html(string $html, int $status = 200): Response
