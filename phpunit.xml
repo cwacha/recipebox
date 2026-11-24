@@ -5,6 +5,10 @@
          colors="true"
          failOnWarning="true"
          failOnRisky="true">
+    <php>
+        <!-- failed sign-ins are logged on purpose; keep the test output readable -->
+        <ini name="error_log" value="/dev/null"/>
+    </php>
     <testsuites>
         <testsuite name="default">
             <directory>tests</directory>

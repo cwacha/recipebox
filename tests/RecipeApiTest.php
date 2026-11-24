@@ -20,6 +20,7 @@ final class RecipeApiTest extends TestCase
         $this->app = new Application(
             dirname(__DIR__),
             new JsonFileRecipeRepository($this->dir . '/recipes.json'),
+            config: ['auth' => ['enabled' => false, 'state_dir' => $this->dir . '/auth']],
         );
     }
 

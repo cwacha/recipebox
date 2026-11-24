@@ -15,4 +15,30 @@ return [
     'import_allow_private_hosts' => filter_var(getenv('RECIPES_IMPORT_ALLOW_PRIVATE_HOSTS'), FILTER_VALIDATE_BOOLEAN),
 
     'sqlite_file' => getenv('RECIPES_SQLITE_FILE') ?: $state . '/recipes.sqlite',
+
+    'auth' => [
+        // false switches the login off: everybody may do everything (including the administration!)
+        'enabled' => filter_var(getenv('RECIPES_AUTH') === false ? 'true' : getenv('RECIPES_AUTH'), FILTER_VALIDATE_BOOLEAN),
+
+        // Account used for visitors who are not signed in. It only gets the rights of its roles (default: read only).
+        // Empty = guests are not allowed, everybody has to sign in.
+        'guest_account' => getenv('RECIPES_GUEST_ACCOUNT') === false ? 'guest' : (string) getenv('RECIPES_GUEST_ACCOUNT'),
+
+        // Providers are chosen by name. More can be registered with 'authenticators' / 'authorizers'
+        // => ['name' => fn (array $authConfig) => new MyProvider(...)]
+        'authenticator' => 'default',
+        'authorizer' => 'default',
+
+        // Built-in accounts/roles/access ship in defaults/, local changes are stored as differences in var/state/.
+        // 'defaults_dir' => ..., 'state_dir' => ..., 'sessions_dir' => ...
+
+        'session_name' => 'recipebox_session',
+        'remember_cookie' => 'recipebox_remember',
+        'remember_days' => 30,
+        'cookie_samesite' => 'Lax',   // Lax | Strict
+        'cookie_secure' => 'auto',    // 'auto' = only over HTTPS, or true / false
+        'min_password_length' => 8,
+        'max_login_attempts' => 5,    // per account and address, then locked for 'lockout_seconds'
+        'lockout_seconds' => 900,
+    ],
 ];

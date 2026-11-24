@@ -1,6 +1,7 @@
 /vendor/
 /var/state/*
 !/var/state/.gitkeep
+/var/sessions/
 /public/uploads/*
 !/public/uploads/.htaccess
 /public/images/*

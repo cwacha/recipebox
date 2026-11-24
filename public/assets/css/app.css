@@ -483,3 +483,16 @@ mark {
     .view-hero { height: 160px; }
     .ingredients-box { border: 1px solid #ddd; background: none; }
 }
+
+/* Administration */
+.admin-tabs .nav-link { color: var(--bs-body-color); }
+.admin-tabs .nav-link.active { color: var(--accent-dark); font-weight: 600; border-bottom-color: var(--bs-body-bg); }
+.admin-tile { border: 1px solid var(--bs-border-color); transition: transform .15s, box-shadow .15s; color: var(--bs-body-color); }
+.admin-tile:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0, 0, 0, .12); }
+.admin-table th { font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--bs-secondary-color); }
+.perm-label { display: inline-block; min-width: 4.5rem; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--bs-secondary-color); }
+.perm { display: inline-block; margin: 0 .3rem .3rem 0; padding: .1rem .5rem; border-radius: .4rem; background: var(--bs-tertiary-bg); color: var(--bs-body-color); font-size: .8rem; }
+.perm-view { background: var(--accent-soft); color: var(--accent-dark); }
+.perm-all { background: #ffe08a; color: #5c4400; font-weight: 600; }
+[data-bs-theme="dark"] .perm-view { color: #ffb48f; }
+.dropdown-menu form { margin: 0; }

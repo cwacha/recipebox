@@ -2,7 +2,8 @@
 
 A small, modern recipe manager built with **PHP 8** (Composer, PSR-4 classes, inheritance, readonly classes),
 **Bootstrap 5** and **jQuery**. Server-rendered pages, each with its own bookmarkable URL; jQuery adds live search,
-the editor and the JSON API calls. No login: anyone can browse, add, edit, delete, import and export recipes.
+the editor and the JSON API calls. Visitors can browse recipes as guests; adding, editing, importing and the
+administration need an account with the right permissions (see *Sign-in and access control*).
 
 ## Run it
 
@@ -11,13 +12,14 @@ composer install
 composer start          # php -S localhost:8000 -t public
 ```
 
-Open <http://localhost:8000>. Run the tests with `composer test`.
+Open <http://localhost:8000> and sign in with **`admin` / `admin`**. You are taken to the password page right away:
+**change this default password before the application is reachable by anybody else.** Run the tests with `composer test`.
 
 Requirements: PHP 8.2+ with `json`, `fileinfo` and `curl` (plus `pdo_sqlite` for SQLite storage, `intl` is used for slugs when present), Composer. Bootstrap, Bootstrap Icons, jQuery and the web fonts
 load from CDNs, so the browser needs internet access.
 
 On Apache, point the document root at `public/` (`.htaccess` is included). Under nginx, route unknown paths to `public/index.php`.
-`var/state/`, `public/images/` and `public/uploads/` must be writable by the web server.
+`var/state/`, `var/sessions/`, `public/images/` and `public/uploads/` must be writable by the web server (and nothing outside `public/` may be served).
 
 ## Pages
 
@@ -28,10 +30,97 @@ On Apache, point the document root at `public/` (`.htaccess` is included). Under
 | `/recipes/{name}/edit` | edit a recipe |
 | `/recipes/new` | create a recipe |
 | `/import` | import recipes from JSON |
+| `/login`, `/logout` | sign in and out |
+| `/account/password` | change the own password |
+| `/admin` | administration overview |
+| `/admin/accounts` | all accounts with their roles |
+| `/admin/account?id=…` | one account with all details and its effective permissions |
+| `/admin/account/edit[?id=…]` | edit an account and its roles, or create a new one (no `id`) |
+| `/admin/account/password?id=…` | set the password of an account |
+| `/admin/roles` | all roles with their permissions (views and actions) and members |
+| `/admin/role/edit[?id=…]` | edit a role and its permissions, or create a new one (no `id`) |
 
 Recipe URLs use a readable name (slug) generated from the title: umlauts become `ae`/`oe`/`ue`, duplicates get `-2`, `-3`, …
 The slug stays the same when you rename a recipe, so bookmarks keep working. Old links that contain the internal id
 (`/recipes/a1c0de000001`) redirect to the readable URL. Existing recipes get their slug automatically (JSON and SQLite).
+
+## Sign-in and access control
+
+The model follows the *authentication and authorization* specification: accounts, roles and permissions, handled by
+three layers in `src/Auth/`:
+
+| Class | Job |
+|---|---|
+| `SecurityController` | the facade the application talks to: authenticates, answers `hasPermission()`, combines an account with its roles and effective permissions |
+| `AuthenticatorDefault` (`AuthenticatorInterface`) | accounts, credential checks (login form, HTTP Basic, persistent-login token, guest), password hashing |
+| `AuthorizerDefault` (`AuthorizerInterface`) | roles, the access table (account → roles), effective permissions |
+
+The namespace is `App\Auth` (the specification suggests `IAddressBook\Auth`; only the vendor part differs).
+
+**Accounts** have an ID, a password hash, and an optional full name and email. The password `!` means "can never sign in"
+(the shipped `guest` account). Passwords are only stored as hashes (`password_hash`, checked with `password_verify`, at most 72 bytes).
+
+**Permissions** are plain strings that exist as soon as a role mentions them. *Views* start with a slash (`/admin/roles`) and
+allow opening a page; *actions* are words (`recipe_delete`) and allow doing something. Every route declares what it needs
+(see `Application::buildRouter()`). Anybody identified may always `show` (read) recipes, and sign out. `ALL` grants everything.
+**Roles** are lists of permissions; an account may do what any of its roles allows. The shipped roles:
+
+| Role | Allows |
+|---|---|
+| `all` | every permission, enumerated; maintained automatically (contains everything any role mentions), cannot be edited or deleted |
+| `admin` | the whole administration (accounts, roles, passwords) |
+| `editor` | create, edit, delete and import recipes, upload pictures, change the own password |
+| `reader` | open the recipe list and recipes |
+
+Shipped accounts: `admin` (role `all`, password `admin`) and `guest` (role `reader`, cannot sign in).
+
+**Not allowed?** A signed-in account that opens something it has no permission for sees an error and lands on the recipe
+list (the implicit `show`). Visitors who are not signed in are sent to the login and come back to where they wanted to go.
+The API answers `401` (sign in) or `403`.
+
+**Guests.** Visitors who are not signed in act as the account named in `auth.guest_account` (default `guest`, read only).
+Set it to an empty string and everybody has to sign in. **Authentication off:** `RECIPES_AUTH=0` (or `auth.enabled`) lets everybody
+do everything, including the administration; use this only on a trusted machine.
+
+**Credentials.** Login form, HTTP Basic (for API clients; `curl -u editor:secret …/api/recipes`), and a *keep me signed in*
+cookie. Several sources are accepted only if they name the same account; anything malformed or contradicting fails closed (`401`).
+
+### Security measures
+
+- **Sessions** are server-side (PHP sessions in `var/sessions/`); the session ID is renewed at sign-in, sign-out clears it, and a session ends
+  when the account is deleted, disabled or its password changes.
+- **Persistent login** uses a random token (only its SHA-256 is stored in `var/state/auth_tokens.json`), expires after 30 days, is replaced at every
+  use, and is revoked at sign-out and password change. It never contains a password.
+- **Cookies** are `HttpOnly`, `SameSite=Lax` and `Secure` when the request came over HTTPS (all configurable under `auth` in `config/app.php`).
+  Behind a reverse proxy that terminates TLS, set `cookie_secure` to `true`.
+- **CSRF**: every change made with cookies (forms and scripts) needs the session's token (`_csrf` field or `X-CSRF-Token` header). HTTP Basic requests
+  carry their credentials each time and need no token.
+- **Guessing**: 5 failed sign-ins per account and address lock that combination for 15 minutes (and 20 per address). Unknown accounts take as
+  long to refuse as known ones, and the error message is the same.
+- **Safe changes**: nobody can delete themselves, and no change is saved that would leave no account able to manage accounts and roles.
+- Failures are written to the PHP error log without passwords or tokens.
+
+### Where the data lives
+
+Like the recipes, accounts, roles and the access table ship as **defaults** (`defaults/accounts.json`, `roles.json`, `access.json`) with
+**local changes** on top, stored in `var/state/` as *differences only* (changed records, and `null` for built-in records you removed).
+The defaults are never written, so an upgrade can ship new built-in roles without touching your changes. Write errors are reported, not ignored.
+Role and access lists are comma separated in the files, as in the specification.
+
+### Forgot the admin password?
+
+```bash
+php bin/account list
+php bin/account set-password admin        # asks for the new password
+php bin/account create anna editor,reader
+```
+
+(Deleting `var/state/accounts.json`, `access.json` and `roles.json` resets everything to the shipped defaults, including `admin` / `admin`.)
+
+### Swapping providers
+
+`SecurityController` only knows the two interfaces. Choose providers by name in `config/app.php` (`auth.authenticator`, `auth.authorizer`);
+register your own with `'authenticators' => ['ldap' => fn (array $auth) => new LdapAuthenticator(...)]`. Names come from this registry only, never from a request.
 
 ## Features
 
@@ -96,14 +185,17 @@ Required: `title`, `cooking_time` (minutes), `ingredients`, `steps`. Ingredients
 ```
 public/            web root: index.php (front controller), assets (app.js shared, one script per page),
                    images (recipe photos), uploads (user uploads)
-var/state/         persistence: recipes.json or recipes.sqlite (created on first run, not versioned)
+var/state/         persistence: recipes.json or recipes.sqlite, local account/role changes, tokens (not versioned)
+var/sessions/      PHP sessions (not versioned)
 config/app.php     choose the storage backend and file locations
 bin/migrate        copies recipes between storage backends
-defaults/          seed data for a fresh install: recipes.json and images/
+bin/account        list accounts, set a password, create an account (recovery)
+defaults/          seed data for a fresh install: recipes.json, images/, and the built-in accounts, roles and access
 src/
   Application.php  wiring, routes, error handling
-  Http/            Request, Response, JsonResponse (extends Response), Router
-  Controller/      AbstractController -> RecipeController, UploadController, PageController
+  Auth/            SecurityController, AuthenticatorDefault, AuthorizerDefault (+ Contract/), WebAuth, Csrf, LayeredStore
+  Http/            Request, Response, JsonResponse, RedirectResponse, Router, Session, Cookie
+  Controller/      AbstractController -> RecipeController, UploadController, PageController, AuthController, AdminController
   Model/           Recipe, Ingredient (readonly value classes)
   Repository/      RecipeRepositoryInterface -> AbstractRecipeRepository (search, ranking)
                    -> JsonFileRecipeRepository   (var/state/recipes.json)
@@ -150,6 +242,9 @@ On the first request, if the configured storage file does not exist yet, the `Se
 To reset to the sample recipes, delete the storage file. Your own recipes and uploads are not part of the defaults.
 
 ### REST API
+
+All calls need the permission of their action (`show` for reads, `recipe_create`, `recipe_edit`, `recipe_delete`, `recipe_import`, `image_upload`).
+Use HTTP Basic, or a session with the `X-CSRF-Token` header.
 
 | Method | Path | |
 |---|---|---|

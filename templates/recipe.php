@@ -38,8 +38,12 @@ $src = $img($recipe->image);
         <div class="d-flex gap-2 flex-wrap no-print">
             <button type="button" class="btn btn-outline-secondary" id="btnPrint"><i class="bi bi-printer"></i> Print</button>
             <a class="btn btn-outline-secondary" href="<?= $e($url('/api/recipes/' . $recipe->id . '/export')) ?>"><i class="bi bi-filetype-json"></i> JSON</a>
-            <a class="btn btn-primary" href="<?= $e($url('/recipes/' . $recipe->slug . '/edit')) ?>"><i class="bi bi-pencil"></i> Edit</a>
-            <button type="button" class="btn btn-outline-danger" id="btnDelete"><i class="bi bi-trash3"></i> Delete</button>
+            <?php if ($can('/recipes/edit')): ?>
+                <a class="btn btn-primary" href="<?= $e($url('/recipes/' . $recipe->slug . '/edit')) ?>"><i class="bi bi-pencil"></i> Edit</a>
+            <?php endif; ?>
+            <?php if ($can('recipe_delete')): ?>
+                <button type="button" class="btn btn-outline-danger" id="btnDelete"><i class="bi bi-trash3"></i> Delete</button>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -80,6 +84,7 @@ $src = $img($recipe->image);
     <?php endif; ?>
 </main>
 
+<?php if ($can('recipe_delete')): ?>
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -93,3 +98,4 @@ $src = $img($recipe->image);
         </div>
     </div>
 </div>
+<?php endif; ?>

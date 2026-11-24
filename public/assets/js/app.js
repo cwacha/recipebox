@@ -2,6 +2,10 @@ window.Recipes = (function ($) {
     'use strict';
 
     const BASE = window.APP.base;
+    const csrf = $('meta[name="csrf-token"]').attr('content');
+    if (csrf) {
+        $.ajaxSetup({headers: {'X-CSRF-Token': csrf}});
+    }
     const ESC = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'};
 
     function esc(s) {
@@ -34,7 +38,7 @@ window.Recipes = (function ($) {
         );
         $('#toasts').append($t);
         $t.on('hidden.bs.toast', function () { $t.remove(); });
-        new bootstrap.Toast($t[0], {delay: type === 'warning' ? 12000 : 3500}).show();
+        new bootstrap.Toast($t[0], {delay: type === 'warning' || type === 'danger' ? 12000 : 3500}).show();
     }
 
     /** Shows a message on the next page, e.g. after a redirect. */
@@ -59,6 +63,9 @@ window.Recipes = (function ($) {
     });
 
     applyThemeIcon();
+
+    // messages the server queued for this visit (after signing in, a denied page, saving in the admin, ...)
+    (window.APP.flash || []).forEach(function (f) { toast(f.message, f.type); });
 
     const pending = sessionStorage.getItem('flash');
     if (pending) {

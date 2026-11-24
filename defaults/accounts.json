@@ -1,0 +1,12 @@
+{
+    "admin": {
+        "password": "$2y$12$FfT0LsVcGiuzS5RuVn8zaOMP8McoiAheeYeHEwJQoGJH9yTUdIyF.",
+        "fullname": "Administrator",
+        "email": ""
+    },
+    "guest": {
+        "password": "!",
+        "fullname": "Guest",
+        "email": ""
+    }
+}

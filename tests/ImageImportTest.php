@@ -37,6 +37,7 @@ final class ImageImportTest extends TestCase
             $this->root,
             new JsonFileRecipeRepository($this->root . '/state/recipes.json'),
             fetcher: $this->fetcher,
+            config: ['auth' => ['enabled' => false, 'state_dir' => $this->root . '/state-auth', 'defaults_dir' => dirname(__DIR__) . '/defaults']],
         );
     }
 

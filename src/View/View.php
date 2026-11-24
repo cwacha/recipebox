@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\View;
 
+use App\Http\Request;
 use App\Model\Recipe;
 use Throwable;
 
@@ -14,10 +15,18 @@ use Throwable;
  */
 final class View
 {
+    /** @param array<string, mixed> $shared variables every template gets (user, can, csrf, flash, ...) */
     public function __construct(
         private readonly string $dir,
         private readonly string $basePath = '',
+        private readonly array $shared = [],
     ) {
+    }
+
+    /** A view that knows who is signed in (set up by the Application for every request). */
+    public static function forRequest(string $dir, Request $request): self
+    {
+        return new self($dir, $request->basePath, $request->attribute('shared', []));
     }
 
     /** @param array<string, mixed> $vars */
@@ -58,8 +67,18 @@ final class View
             },
         ];
 
+        $defaults = [
+            'authEnabled' => false,
+            'user' => null,
+            'isGuest' => false,
+            'can' => static fn (string $permission): bool => true,
+            'csrf' => static fn (): string => '',
+            'flash' => static fn (): array => [],
+        ];
+
         extract($helpers);
         extract($vars, EXTR_SKIP);
+        extract($this->shared + $defaults, EXTR_SKIP);
 
         ob_start();
         try {

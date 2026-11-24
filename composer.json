@@ -28,7 +28,8 @@
             "@php -S localhost:8000 -t public"
         ],
         "test": "phpunit",
-        "migrate": "@php bin/migrate"
+        "migrate": "@php bin/migrate",
+        "account": "@php bin/account"
     },
     "config": {
         "sort-packages": true,

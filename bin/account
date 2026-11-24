@@ -1,0 +1,70 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use App\Auth\AuthFactory;
+use App\Auth\Exception\LockoutPrevented;
+use App\Auth\Exception\ValidationFailed;
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+$root = dirname(__DIR__);
+$config = require $root . '/config/app.php';
+$security = AuthFactory::create(AuthFactory::normalize((array) ($config['auth'] ?? []), $root));
+
+[, $command, $id, $roles] = $argv + [null, null, null, null];
+
+$fail = static function (string $message): never {
+    fwrite(STDERR, $message . PHP_EOL);
+    exit(1);
+};
+
+$readPassword = static function (string $prompt): string {
+    if (($env = getenv('ACCOUNT_PASSWORD')) !== false) {
+        return $env;
+    }
+    fwrite(STDERR, $prompt);
+    $tty = stream_isatty(STDIN);
+    if ($tty) {
+        shell_exec('stty -echo');
+    }
+    $line = (string) fgets(STDIN);
+    if ($tty) {
+        shell_exec('stty echo');
+        fwrite(STDERR, PHP_EOL);
+    }
+
+    return rtrim($line, "\r\n");
+};
+
+try {
+    switch ($command) {
+        case 'list':
+            foreach ($security->getAccounts() as $accountId => $account) {
+                printf("%-20s %-10s %-22s %s\n", $accountId, $account['can_sign_in'] ? 'enabled' : 'disabled', implode(',', $account['roles']), $account['fullname']);
+            }
+            break;
+
+        case 'set-password':
+            $id !== null || $fail('Usage: php bin/account set-password <account>');
+            $security->getAccount($id) !== null || $fail("Unknown account: $id");
+            $security->changePassword($id, $readPassword("New password for $id: "));
+            echo "Password of $id changed.\n";
+            break;
+
+        case 'create':
+            $id !== null || $fail('Usage: php bin/account create <account> [role,role]');
+            $security->getAccount($id) === null || $fail("Account $id exists already. Use set-password to change its password.");
+            $security->saveAccount($id, ['password' => $readPassword("Password for $id: ")], array_filter(explode(',', (string) $roles)));
+            echo "Account $id created.\n";
+            break;
+
+        default:
+            $fail("Usage: php bin/account <command>\n  list\n  set-password <account>    (password is asked for, or taken from ACCOUNT_PASSWORD)\n  create <account> [roles]  e.g. create anna editor,reader");
+    }
+} catch (ValidationFailed $e) {
+    $fail('Refused: ' . implode(' ', $e->errors));
+} catch (LockoutPrevented | Throwable $e) {
+    $fail('Failed: ' . $e->getMessage());
+}

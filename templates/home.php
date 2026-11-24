@@ -49,8 +49,10 @@ $chipUrl = static fn (string $cat): string => $url('/') . ($q !== '' || $cat !==
         <div class="empty text-center py-5">
             <div class="display-1">🥣</div>
             <h3 class="h4 mt-3">No recipes found</h3>
-            <p class="text-body-secondary">Try a different search or add a new recipe.</p>
-            <a class="btn btn-primary" href="<?= $e($url('/recipes/new')) ?>"><i class="bi bi-plus-lg"></i> New recipe</a>
+            <p class="text-body-secondary">Try a different search<?= $can('/recipes/new') ? ' or add a new recipe' : '' ?>.</p>
+            <?php if ($can('/recipes/new')): ?>
+                <a class="btn btn-primary" href="<?= $e($url('/recipes/new')) ?>"><i class="bi bi-plus-lg"></i> New recipe</a>
+            <?php endif; ?>
         </div>
     <?php else: ?>
         <div class="row g-4">

@@ -101,6 +101,6 @@ final class PageController extends AbstractController
 
     private function view(Request $request): View
     {
-        return new View($this->templateDir, $request->basePath);
+        return View::forRequest($this->templateDir, $request);
     }
 }

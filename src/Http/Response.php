@@ -6,6 +6,9 @@ namespace App\Http;
 
 class Response
 {
+    /** @var list<Cookie> */
+    protected array $cookies = [];
+
     /** @param array<string, string> $headers */
     public function __construct(
         protected string $body = '',
@@ -30,11 +33,33 @@ class Response
         return $this->body;
     }
 
+    public function addCookie(Cookie $cookie): static
+    {
+        $this->cookies[] = $cookie;
+
+        return $this;
+    }
+
+    /** @return list<Cookie> */
+    public function cookies(): array
+    {
+        return $this->cookies;
+    }
+
     public function send(): void
     {
         http_response_code($this->status);
         foreach ($this->headers as $name => $value) {
             header("$name: $value");
+        }
+        foreach ($this->cookies as $cookie) {
+            setcookie($cookie->name, $cookie->value, [
+                'expires' => $cookie->expires,
+                'path' => $cookie->path,
+                'secure' => $cookie->secure,
+                'httponly' => $cookie->httpOnly,
+                'samesite' => $cookie->sameSite,
+            ]);
         }
         echo $this->body;
     }
