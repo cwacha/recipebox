@@ -1,0 +1,4 @@
+# Uploaded files are images only – never execute anything here
+<FilesMatch "\.(?i:php\d?|phtml|phar)$">
+    Require all denied
+</FilesMatch>

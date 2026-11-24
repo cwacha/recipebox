@@ -1,0 +1,6 @@
+/vendor/
+/data/*.lock
+/data/*.tmp
+/public/uploads/*
+!/public/uploads/.htaccess
+.phpunit.cache/

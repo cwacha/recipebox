@@ -1,0 +1,401 @@
+{
+    "recipes": [
+        {
+            "id": "a1c0de000001",
+            "title": "Spaghetti Carbonara",
+            "description": "The Roman classic: silky egg and pecorino sauce, crispy guanciale and lots of black pepper. No cream needed.",
+            "category": "Pasta",
+            "image": "images/seed/carbonara.jpg",
+            "servings": 4,
+            "cooking_time": 25,
+            "ingredients": [
+                {
+                    "quantity": "400 g",
+                    "name": "spaghetti"
+                },
+                {
+                    "quantity": "150 g",
+                    "name": "guanciale or pancetta, diced"
+                },
+                {
+                    "quantity": "4",
+                    "name": "egg yolks"
+                },
+                {
+                    "quantity": "2",
+                    "name": "whole eggs"
+                },
+                {
+                    "quantity": "80 g",
+                    "name": "pecorino romano, finely grated"
+                },
+                {
+                    "quantity": "2 tsp",
+                    "name": "freshly ground black pepper"
+                },
+                {
+                    "quantity": "1 tbsp",
+                    "name": "salt for the pasta water"
+                },
+                {
+                    "quantity": "noch mehr",
+                    "name": "Kääse"
+                }
+            ],
+            "steps": [
+                "Bring a large pot of water to the boil and salt it generously.",
+                "Whisk the egg yolks, whole eggs, pecorino and plenty of black pepper in a bowl until smooth.",
+                "Fry the guanciale in a cold, large pan over medium heat for 8 minutes until golden and crisp. Turn off the heat.",
+                "Cook the spaghetti until al dente (about 9 minutes). Scoop out a cup of pasta water, then drain.",
+                "Add the hot pasta to the pan with the guanciale and toss. Let it cool for 30 seconds off the heat.",
+                "Pour in the egg mixture and toss quickly, adding splashes of pasta water until the sauce is creamy and glossy.",
+                "Serve immediately with extra pecorino and pepper."
+            ],
+            "tags": [
+                "italian",
+                "quick",
+                "classic"
+            ],
+            "created_at": "2026-11-01T10:00:00+00:00",
+            "updated_at": "2026-11-09T22:56:11+00:00"
+        },
+        {
+            "id": "a1c0de000002",
+            "title": "Chicken Tikka Masala",
+            "description": "Tender marinated chicken in a creamy, mildly spiced tomato sauce. Perfect with basmati rice and naan.",
+            "category": "Curry",
+            "image": "images/seed/tikka-masala.jpg",
+            "servings": 4,
+            "cooking_time": 60,
+            "ingredients": [
+                {
+                    "quantity": "800 g",
+                    "name": "chicken breast, cut into chunks"
+                },
+                {
+                    "quantity": "200 g",
+                    "name": "natural yoghurt"
+                },
+                {
+                    "quantity": "2 tbsp",
+                    "name": "garam masala"
+                },
+                {
+                    "quantity": "1 tbsp",
+                    "name": "ground cumin"
+                },
+                {
+                    "quantity": "1 tsp",
+                    "name": "turmeric"
+                },
+                {
+                    "quantity": "2",
+                    "name": "onions, finely chopped"
+                },
+                {
+                    "quantity": "4 cloves",
+                    "name": "garlic, minced"
+                },
+                {
+                    "quantity": "1 piece (3 cm)",
+                    "name": "fresh ginger, grated"
+                },
+                {
+                    "quantity": "400 g",
+                    "name": "chopped tomatoes (tin)"
+                },
+                {
+                    "quantity": "150 ml",
+                    "name": "double cream"
+                },
+                {
+                    "quantity": "2 tbsp",
+                    "name": "vegetable oil"
+                },
+                {
+                    "quantity": "300 g",
+                    "name": "basmati rice"
+                },
+                {
+                    "quantity": "1 handful",
+                    "name": "fresh coriander"
+                }
+            ],
+            "steps": [
+                "Mix the chicken with yoghurt, 1 tbsp garam masala, cumin, turmeric and a pinch of salt. Marinate for at least 20 minutes.",
+                "Heat the oil in a large pan and sear the chicken in batches for 3 to 4 minutes until browned. Set aside.",
+                "In the same pan, fry the onions for 8 minutes until soft and golden.",
+                "Add garlic and ginger and cook for 1 minute, then stir in the remaining garam masala.",
+                "Add the chopped tomatoes and simmer for 15 minutes until the sauce thickens.",
+                "Return the chicken to the pan, stir in the cream and simmer gently for 10 minutes.",
+                "Meanwhile, cook the basmati rice according to the packet instructions.",
+                "Season to taste, scatter with fresh coriander and serve with the rice."
+            ],
+            "tags": [
+                "indian",
+                "chicken",
+                "spicy"
+            ],
+            "created_at": "2026-11-02T10:00:00+00:00",
+            "updated_at": "2026-11-02T10:00:00+00:00"
+        },
+        {
+            "id": "a1c0de000003",
+            "title": "Greek Salad",
+            "description": "Crunchy vegetables, salty feta and good olive oil. Ready in 15 minutes and ideal for hot days.",
+            "category": "Salad",
+            "image": "images/seed/greek-salad.jpg",
+            "servings": 4,
+            "cooking_time": 15,
+            "ingredients": [
+                {
+                    "quantity": "4",
+                    "name": "ripe tomatoes, cut into wedges"
+                },
+                {
+                    "quantity": "1",
+                    "name": "cucumber, sliced into half moons"
+                },
+                {
+                    "quantity": "1",
+                    "name": "red onion, thinly sliced"
+                },
+                {
+                    "quantity": "1",
+                    "name": "green pepper, sliced"
+                },
+                {
+                    "quantity": "150 g",
+                    "name": "kalamata olives"
+                },
+                {
+                    "quantity": "200 g",
+                    "name": "feta, in one slab"
+                },
+                {
+                    "quantity": "5 tbsp",
+                    "name": "extra virgin olive oil"
+                },
+                {
+                    "quantity": "1 tbsp",
+                    "name": "red wine vinegar"
+                },
+                {
+                    "quantity": "1 tsp",
+                    "name": "dried oregano"
+                }
+            ],
+            "steps": [
+                "Cut the tomatoes, cucumber, onion and pepper and place them in a large bowl.",
+                "Add the olives and gently toss with a pinch of salt.",
+                "Whisk the olive oil with the red wine vinegar and pour over the vegetables.",
+                "Place the slab of feta on top and sprinkle with oregano.",
+                "Serve right away with fresh bread."
+            ],
+            "tags": [
+                "greek",
+                "vegetarian",
+                "no-cook",
+                "quick"
+            ],
+            "created_at": "2026-11-03T10:00:00+00:00",
+            "updated_at": "2026-11-03T10:00:00+00:00"
+        },
+        {
+            "id": "a1c0de000004",
+            "title": "Fluffy Blueberry Pancakes",
+            "description": "Thick, fluffy American-style pancakes with juicy blueberries. A weekend breakfast favourite.",
+            "category": "Breakfast",
+            "image": "images/seed/pancakes.jpg",
+            "servings": 4,
+            "cooking_time": 30,
+            "ingredients": [
+                {
+                    "quantity": "250 g",
+                    "name": "plain flour"
+                },
+                {
+                    "quantity": "2 tbsp",
+                    "name": "sugar"
+                },
+                {
+                    "quantity": "2 tsp",
+                    "name": "baking powder"
+                },
+                {
+                    "quantity": "1/2 tsp",
+                    "name": "salt"
+                },
+                {
+                    "quantity": "300 ml",
+                    "name": "milk"
+                },
+                {
+                    "quantity": "2",
+                    "name": "eggs"
+                },
+                {
+                    "quantity": "50 g",
+                    "name": "melted butter, plus extra for frying"
+                },
+                {
+                    "quantity": "150 g",
+                    "name": "blueberries"
+                },
+                {
+                    "quantity": "to serve",
+                    "name": "maple syrup"
+                }
+            ],
+            "steps": [
+                "Mix flour, sugar, baking powder and salt in a large bowl.",
+                "Whisk milk, eggs and melted butter in a jug.",
+                "Pour the wet into the dry ingredients and stir briefly. A few lumps are fine; do not overmix.",
+                "Let the batter rest for 5 minutes.",
+                "Heat a non-stick pan over medium heat and brush with a little butter.",
+                "Pour in a ladle of batter, scatter over some blueberries and cook for 2 to 3 minutes until bubbles appear on the surface.",
+                "Flip and cook for another 1 to 2 minutes until golden. Keep warm in the oven at 80 °C.",
+                "Stack the pancakes and serve with butter and maple syrup."
+            ],
+            "tags": [
+                "breakfast",
+                "sweet",
+                "vegetarian"
+            ],
+            "created_at": "2026-11-04T10:00:00+00:00",
+            "updated_at": "2026-11-04T10:00:00+00:00"
+        },
+        {
+            "id": "a1c0de000005",
+            "title": "Creamy Mushroom Risotto",
+            "description": "Slow-stirred arborio rice with earthy mushrooms, white wine and parmesan. Comfort food at its best.",
+            "category": "Rice",
+            "image": "images/seed/mushroom-risotto.jpg",
+            "servings": 4,
+            "cooking_time": 45,
+            "ingredients": [
+                {
+                    "quantity": "320 g",
+                    "name": "arborio risotto rice"
+                },
+                {
+                    "quantity": "400 g",
+                    "name": "mixed mushrooms, sliced"
+                },
+                {
+                    "quantity": "1.2 l",
+                    "name": "hot vegetable stock"
+                },
+                {
+                    "quantity": "1",
+                    "name": "onion, finely chopped"
+                },
+                {
+                    "quantity": "2 cloves",
+                    "name": "garlic, minced"
+                },
+                {
+                    "quantity": "125 ml",
+                    "name": "dry white wine"
+                },
+                {
+                    "quantity": "60 g",
+                    "name": "butter"
+                },
+                {
+                    "quantity": "60 g",
+                    "name": "parmesan, grated"
+                },
+                {
+                    "quantity": "2 tbsp",
+                    "name": "olive oil"
+                },
+                {
+                    "quantity": "1 handful",
+                    "name": "fresh parsley, chopped"
+                }
+            ],
+            "steps": [
+                "Keep the stock hot in a saucepan over low heat.",
+                "Heat the olive oil and half of the butter in a large pan. Fry the mushrooms over high heat for 5 minutes until golden, then set aside.",
+                "In the same pan, soften the onion for 5 minutes, add the garlic and cook for 1 minute.",
+                "Add the rice and stir for 2 minutes until the grains turn glossy.",
+                "Pour in the wine and stir until it has been absorbed.",
+                "Add the stock one ladle at a time, stirring often and waiting until each ladle is absorbed. This takes about 18 minutes.",
+                "When the rice is creamy and just tender, stir in the mushrooms, remaining butter and parmesan.",
+                "Rest for 2 minutes with the lid on, scatter with parsley and serve."
+            ],
+            "tags": [
+                "italian",
+                "vegetarian",
+                "comfort food"
+            ],
+            "created_at": "2026-11-05T10:00:00+00:00",
+            "updated_at": "2026-11-05T10:00:00+00:00"
+        },
+        {
+            "id": "a1c0de000006",
+            "title": "Roasted Tomato Soup",
+            "description": "Oven-roasted tomatoes give this soup a deep, sweet flavour. Great with a grilled cheese sandwich.",
+            "category": "Soup",
+            "image": "images/seed/tomato-soup.jpg",
+            "servings": 4,
+            "cooking_time": 50,
+            "ingredients": [
+                {
+                    "quantity": "1 kg",
+                    "name": "ripe tomatoes, halved"
+                },
+                {
+                    "quantity": "1",
+                    "name": "onion, quartered"
+                },
+                {
+                    "quantity": "4 cloves",
+                    "name": "garlic, unpeeled"
+                },
+                {
+                    "quantity": "3 tbsp",
+                    "name": "olive oil"
+                },
+                {
+                    "quantity": "500 ml",
+                    "name": "vegetable stock"
+                },
+                {
+                    "quantity": "1 tsp",
+                    "name": "sugar"
+                },
+                {
+                    "quantity": "100 ml",
+                    "name": "cream (optional)"
+                },
+                {
+                    "quantity": "1 handful",
+                    "name": "fresh basil"
+                },
+                {
+                    "quantity": "8 slices",
+                    "name": "bread and cheese for grilled sandwiches"
+                }
+            ],
+            "steps": [
+                "Heat the oven to 200 °C (180 °C fan).",
+                "Spread the tomatoes, onion and garlic on a baking tray, drizzle with olive oil and season with salt and pepper.",
+                "Roast for 35 minutes until the tomatoes are soft and slightly charred.",
+                "Squeeze the garlic out of its skins and transfer everything to a pot with the stock and sugar.",
+                "Simmer for 5 minutes, add most of the basil and blend until smooth.",
+                "Stir in the cream, season to taste and heat through.",
+                "Make grilled cheese sandwiches in a pan until golden on both sides.",
+                "Serve the soup with a basil leaf and the sandwiches on the side."
+            ],
+            "tags": [
+                "soup",
+                "vegetarian",
+                "winter"
+            ],
+            "created_at": "2026-11-06T10:00:00+00:00",
+            "updated_at": "2026-11-06T10:00:00+00:00"
+        }
+    ]
+}
