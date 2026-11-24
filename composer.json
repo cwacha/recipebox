@@ -1,6 +1,6 @@
 {
     "name": "cwacha/recipe-box",
-    "description": "Recipe Box – a small PHP 8 / Bootstrap / jQuery web app to manage cooking recipes.",
+    "description": "Recipe Box \u2013 a small PHP 8 / Bootstrap / jQuery web app to manage cooking recipes.",
     "type": "project",
     "license": "MIT",
     "require": {
@@ -26,10 +26,14 @@
             "Composer\\Config::disableProcessTimeout",
             "@php -S localhost:8000 -t public"
         ],
-        "test": "phpunit"
+        "test": "phpunit",
+        "migrate": "@php bin/migrate"
     },
     "config": {
         "sort-packages": true,
         "optimize-autoloader": true
+    },
+    "suggest": {
+        "ext-pdo_sqlite": "Required to store recipes in SQLite instead of a JSON file"
     }
 }

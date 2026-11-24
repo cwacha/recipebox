@@ -4,23 +4,95 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Exception\NotFoundException;
 use App\Http\Request;
 use App\Http\Response;
+use App\Model\Recipe;
+use App\Repository\RecipeRepositoryInterface;
+use App\View\View;
 
+/** Server rendered HTML pages. Each page has its own URL. */
 final class PageController extends AbstractController
 {
-    public function __construct(private readonly string $templateDir)
-    {
+    public function __construct(
+        private readonly RecipeRepositoryInterface $recipes,
+        private readonly string $templateDir,
+    ) {
     }
 
     public function home(Request $request): Response
     {
-        $basePath = $request->basePath;
-        $servings = \App\Model\Recipe::SERVINGS;
+        $q = trim($request->query('q'));
+        $category = trim($request->query('category'));
 
-        ob_start();
-        require $this->templateDir . '/home.php';
+        return $this->html($this->view($request)->page('home', [
+            'q' => $q,
+            'category' => $category,
+            'terms' => preg_split('/\s+/u', mb_strtolower($q), -1, PREG_SPLIT_NO_EMPTY) ?: [],
+            'recipes' => $this->recipes->search($q, $category ?: null),
+            'categories' => $this->recipes->categories(),
+        ], 'Recipe Box – your kitchen companion', 'home', ['home.js']));
+    }
 
-        return $this->html((string) ob_get_clean());
+    public function show(Request $request, string $id): Response
+    {
+        $recipe = $this->findOrFail($id);
+
+        return $this->html($this->view($request)->page(
+            'recipe',
+            ['recipe' => $recipe],
+            $recipe->title . ' – Recipe Box',
+            '',
+            ['recipe.js'],
+            $recipe->description !== '' ? $recipe->description : $recipe->title,
+        ));
+    }
+
+    public function create(Request $request): Response
+    {
+        return $this->form($request, null);
+    }
+
+    public function edit(Request $request, string $id): Response
+    {
+        return $this->form($request, $this->findOrFail($id));
+    }
+
+    public function import(Request $request): Response
+    {
+        return $this->html($this->view($request)->page('import', [
+            'example' => [
+                'title' => 'Tomato Bruschetta',
+                'description' => 'Crisp toasted bread with marinated tomatoes.',
+                'category' => 'Starter',
+                'image' => 'https://example.com/bruschetta.jpg',
+                'cooking_time' => 15,
+                'ingredients' => [
+                    ['quantity' => '8 slices', 'name' => 'ciabatta'],
+                    ['quantity' => '500 g', 'name' => 'ripe tomatoes, diced'],
+                    ['quantity' => '2 cloves', 'name' => 'garlic'],
+                ],
+                'steps' => ['Toast the bread.', 'Mix tomatoes, oil, salt and basil.', 'Rub the toast with garlic and top with the tomatoes.'],
+                'tags' => ['italian', 'vegetarian'],
+            ],
+        ], 'Import recipes – Recipe Box', 'import', ['import.js']));
+    }
+
+    private function form(Request $request, ?Recipe $recipe): Response
+    {
+        return $this->html($this->view($request)->page('form', [
+            'recipe' => $recipe,
+            'categories' => $this->recipes->categories(),
+        ], ($recipe ? 'Edit ' . $recipe->title : 'New recipe') . ' – Recipe Box', $recipe ? '' : 'new', ['form.js']));
+    }
+
+    private function findOrFail(string $id): Recipe
+    {
+        return $this->recipes->find($id) ?? throw new NotFoundException('This recipe does not exist (anymore).');
+    }
+
+    private function view(Request $request): View
+    {
+        return new View($this->templateDir, $request->basePath);
     }
 }

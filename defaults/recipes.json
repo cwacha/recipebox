@@ -5,7 +5,7 @@
             "title": "Spaghetti Carbonara",
             "description": "The Roman classic: silky egg and pecorino sauce, crispy guanciale and lots of black pepper. No cream needed.",
             "category": "Pasta",
-            "image": "images/seed/carbonara.jpg",
+            "image": "images/carbonara.jpg",
             "servings": 4,
             "cooking_time": 25,
             "ingredients": [
@@ -36,10 +36,6 @@
                 {
                     "quantity": "1 tbsp",
                     "name": "salt for the pasta water"
-                },
-                {
-                    "quantity": "noch mehr",
-                    "name": "Kääse"
                 }
             ],
             "steps": [
@@ -57,14 +53,14 @@
                 "classic"
             ],
             "created_at": "2026-11-01T10:00:00+00:00",
-            "updated_at": "2026-11-09T22:56:11+00:00"
+            "updated_at": "2026-11-01T10:00:00+00:00"
         },
         {
             "id": "a1c0de000002",
             "title": "Chicken Tikka Masala",
             "description": "Tender marinated chicken in a creamy, mildly spiced tomato sauce. Perfect with basmati rice and naan.",
             "category": "Curry",
-            "image": "images/seed/tikka-masala.jpg",
+            "image": "images/tikka-masala.jpg",
             "servings": 4,
             "cooking_time": 60,
             "ingredients": [
@@ -144,7 +140,7 @@
             "title": "Greek Salad",
             "description": "Crunchy vegetables, salty feta and good olive oil. Ready in 15 minutes and ideal for hot days.",
             "category": "Salad",
-            "image": "images/seed/greek-salad.jpg",
+            "image": "images/greek-salad.jpg",
             "servings": 4,
             "cooking_time": 15,
             "ingredients": [
@@ -206,7 +202,7 @@
             "title": "Fluffy Blueberry Pancakes",
             "description": "Thick, fluffy American-style pancakes with juicy blueberries. A weekend breakfast favourite.",
             "category": "Breakfast",
-            "image": "images/seed/pancakes.jpg",
+            "image": "images/pancakes.jpg",
             "servings": 4,
             "cooking_time": 30,
             "ingredients": [
@@ -270,7 +266,7 @@
             "title": "Creamy Mushroom Risotto",
             "description": "Slow-stirred arborio rice with earthy mushrooms, white wine and parmesan. Comfort food at its best.",
             "category": "Rice",
-            "image": "images/seed/mushroom-risotto.jpg",
+            "image": "images/mushroom-risotto.jpg",
             "servings": 4,
             "cooking_time": 45,
             "ingredients": [
@@ -338,7 +334,7 @@
             "title": "Roasted Tomato Soup",
             "description": "Oven-roasted tomatoes give this soup a deep, sweet flavour. Great with a grilled cheese sandwich.",
             "category": "Soup",
-            "image": "images/seed/tomato-soup.jpg",
+            "image": "images/tomato-soup.jpg",
             "servings": 4,
             "cooking_time": 50,
             "ingredients": [

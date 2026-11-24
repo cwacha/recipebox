@@ -119,6 +119,7 @@ h1, h2.display, .brand, .recipe-title, .card-title-serif {
 }
 
 .chip {
+    text-decoration: none;
     border: 1px solid var(--bs-border-color);
     background: var(--bs-body-bg);
     color: var(--bs-body-color);
@@ -144,7 +145,7 @@ h1, h2.display, .brand, .recipe-title, .card-title-serif {
     border: 0;
     border-radius: 1.1rem;
     overflow: hidden;
-    cursor: pointer;
+    position: relative;
     height: 100%;
     background: var(--bs-body-bg);
     box-shadow: 0 2px 12px rgba(0, 0, 0, .08);
@@ -155,10 +156,16 @@ h1, h2.display, .brand, .recipe-title, .card-title-serif {
     background: var(--bs-tertiary-bg);
 }
 
-.recipe-card:hover, .recipe-card:focus-visible {
+.stretched-link-card {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    border-radius: inherit;
+}
+
+.recipe-card:hover, .recipe-card:focus-within {
     transform: translateY(-5px);
     box-shadow: 0 14px 34px rgba(0, 0, 0, .18);
-    outline: none;
 }
 
 .thumb {
@@ -257,9 +264,8 @@ mark {
 /* Recipe view */
 .view-hero {
     position: relative;
-    height: 320px;
+    height: 360px;
     background: linear-gradient(135deg, var(--accent-soft), #ffd9b8);
-    flex: none;
 }
 
 .view-hero img {
@@ -277,9 +283,9 @@ mark {
 
 .view-hero .caption {
     position: absolute;
-    left: 1.5rem;
-    right: 1.5rem;
-    bottom: 1.2rem;
+    left: 0;
+    right: 0;
+    bottom: 1.5rem;
     color: #fff;
     z-index: 2;
 }
@@ -289,17 +295,6 @@ mark {
     font-size: clamp(1.7rem, 4vw, 2.6rem);
     margin: 0;
     text-shadow: 0 2px 12px rgba(0, 0, 0, .4);
-}
-
-.view-hero .btn-close {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    z-index: 3;
-    background-color: rgba(255, 255, 255, .85);
-    border-radius: 50%;
-    padding: .7rem;
-    opacity: 1;
 }
 
 .meta-pill {
@@ -479,13 +474,12 @@ mark {
 }
 
 @media (max-width: 991.98px) {
-    .modal-content { border-radius: 0; }
-    .view-hero { height: 220px; }
+    .view-hero { height: 240px; }
 }
 
 @media print {
-    .app-navbar, .hero, footer, #grid, #resultInfo, .modal-footer, .btn-close, .no-print { display: none !important; }
-    .modal { position: static !important; display: block !important; }
-    .modal-dialog { max-width: 100% !important; margin: 0 !important; }
+    .app-navbar, .hero, footer, .breadcrumb, .no-print, .toast-container { display: none !important; }
+    body { background: #fff; }
     .view-hero { height: 160px; }
+    .ingredients-box { border: 1px solid #ddd; background: none; }
 }

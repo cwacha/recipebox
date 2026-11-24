@@ -1,6 +1,9 @@
 /vendor/
-/data/*.lock
-/data/*.tmp
+/var/state/*
+!/var/state/.gitkeep
 /public/uploads/*
 !/public/uploads/.htaccess
+/public/images/*
+!/public/images/.gitkeep
 .phpunit.cache/
+.phpunit.result.cache

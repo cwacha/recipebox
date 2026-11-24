@@ -1,0 +1,37 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use App\Repository\RepositoryFactory;
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+$factory = new RepositoryFactory(require dirname(__DIR__) . '/config/app.php');
+[, $from, $to] = $argv + [null, null, null];
+
+$fail = static function (string $message): never {
+    fwrite(STDERR, $message . PHP_EOL);
+    exit(1);
+};
+
+if ($from === null || $to === null) {
+    $fail("Usage: php bin/migrate <from> <to>\n  Copies all recipes between storages (" . implode(', ', RepositoryFactory::DRIVERS) . ").\n  Recipes with the same id in the target are overwritten, others are kept.");
+}
+if ($from === $to) {
+    $fail('Source and target are the same storage.');
+}
+
+try {
+    if (!$factory->exists($from)) {
+        $fail(sprintf('Nothing to copy: %s does not exist.', $factory->file($from)));
+    }
+
+    $recipes = $factory->create($from)->all();
+    $factory->create($to)->saveMany($recipes);
+} catch (Throwable $e) {
+    $fail('Failed: ' . $e->getMessage());
+}
+
+printf("Copied %d recipes from %s to %s.\n", count($recipes), $factory->file($from), $factory->file($to));
+printf("Set \"storage\" => '%s' in config/app.php (or RECIPES_STORAGE=%s) to use it.\n", $to, $to);

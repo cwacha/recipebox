@@ -13,10 +13,12 @@ use App\Http\JsonResponse;
 use App\Http\Request;
 use App\Http\Response;
 use App\Http\Router;
-use App\Repository\JsonFileRecipeRepository;
 use App\Repository\RecipeRepositoryInterface;
+use App\Repository\RepositoryFactory;
 use App\Service\ImageStorage;
+use App\Service\Seeder;
 use App\Validation\RecipeValidator;
+use App\View\View;
 use Throwable;
 
 final class Application
@@ -57,23 +59,40 @@ final class Application
             return new JsonResponse(['error' => $message], $status);
         }
 
-        return new Response('<!doctype html><title>' . $status . '</title><h1>' . $status . '</h1><p>'
-            . htmlspecialchars($message, ENT_QUOTES) . '</p>', $status);
+        $html = (new View($this->rootDir . '/templates', $request->basePath))
+            ->page('error', ['status' => $status, 'message' => $message], 'Error ' . $status . ' – Recipe Box');
+
+        return new Response($html, $status);
+    }
+
+    private function defaultRepository(): RecipeRepositoryInterface
+    {
+        $factory = new RepositoryFactory(require $this->rootDir . '/config/app.php');
+
+        $fresh = !$factory->exists();
+        $repository = $factory->create();
+        if ($fresh) {
+            (new Seeder($this->rootDir . '/defaults', $this->rootDir . '/public'))->seed($repository);
+        }
+
+        return $repository;
     }
 
     private function buildRouter(): Router
     {
-        $repository = $this->repository ?? new JsonFileRecipeRepository(
-            getenv('RECIPES_DATA_FILE') ?: $this->rootDir . '/data/recipes.json',
-        );
+        $repository = $this->repository ?? $this->defaultRepository();
         $images = new ImageStorage($this->rootDir . '/public');
 
         $recipes = new RecipeController($repository, new RecipeValidator(), $images);
         $uploads = new UploadController($images);
-        $pages = new PageController($this->rootDir . '/templates');
+        $pages = new PageController($repository, $this->rootDir . '/templates');
 
         return (new Router())
             ->add('GET', '/', $pages->home(...))
+            ->add('GET', '/recipes/new', $pages->create(...))
+            ->add('GET', '/recipes/{id}', $pages->show(...))
+            ->add('GET', '/recipes/{id}/edit', $pages->edit(...))
+            ->add('GET', '/import', $pages->import(...))
             ->add('GET', '/api/recipes', $recipes->index(...))
             ->add('POST', '/api/recipes', $recipes->store(...))
             ->add('POST', '/api/recipes/import', $recipes->import(...))
