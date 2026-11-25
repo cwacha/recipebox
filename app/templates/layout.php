@@ -23,9 +23,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= $e($title) ?></title>
     <meta name="description" content="<?= $e($description) ?>">
-<?php if ($user !== null): ?>
-    <meta name="csrf-token" content="<?= $e($csrf()) ?>">
-<?php endif; ?>
+    <?php if ($user !== null): ?>
+        <meta name="csrf-token" content="<?= $e($csrf()) ?>">
+    <?php endif; ?>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🍳%3C/text%3E%3C/svg%3E">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -41,67 +41,63 @@
 </head>
 <body>
 
-<nav class="navbar navbar-expand-md app-navbar sticky-top">
-    <div class="container">
-        <a class="navbar-brand brand" href="<?= $e($url('/')) ?>"><i class="bi bi-egg-fried"></i> Recipe Box</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-label="Menu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="nav">
-            <div class="ms-auto d-flex flex-wrap gap-2 py-2 py-md-0 align-items-center">
-                <?php if ($can('/recipes/new')): ?>
-                <a class="btn btn-primary<?= $active === 'new' ? ' active' : '' ?>" href="<?= $e($url('/recipes/new')) ?>"><i class="bi bi-plus-lg"></i> New recipe</a>
-                <?php endif; ?>
-                <?php if ($can('/import')): ?>
-                <a class="btn btn-outline-secondary<?= $active === 'import' ? ' active' : '' ?>" href="<?= $e($url('/import')) ?>"><i class="bi bi-upload"></i> Import JSON</a>
-                <?php endif; ?>
-                <?php if ($can('show')): ?>
-                <a class="btn btn-outline-secondary" href="<?= $e($url('/api/recipes/export')) ?>"><i class="bi bi-download"></i> Export all</a>
-                <?php endif; ?>
-                <?php if ($can('/admin')): ?>
-                <a class="btn btn-outline-secondary<?= $active === 'admin' ? ' active' : '' ?>" href="<?= $e($url('/admin')) ?>"><i class="bi bi-shield-lock"></i> Admin</a>
-                <?php endif; ?>
-                <button class="btn btn-outline-secondary" id="btnTheme" type="button" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi bi-moon-stars"></i></button>
-                <?php if ($user !== null): ?>
-                <div class="dropdown">
-                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-circle"></i> <?= $e($user['fullname'] !== '' ? $user['fullname'] : $user['id']) ?>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><span class="dropdown-item-text small text-body-secondary">Signed in as <strong><?= $e($user['id']) ?></strong></span></li>
-                        <?php if ($can('/account/password')): ?>
-                        <li><a class="dropdown-item" href="<?= $e($url('/account/password')) ?>"><i class="bi bi-key"></i> Change password</a></li>
-                        <?php endif; ?>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <form method="post" action="<?= $e($url('/logout')) ?>">
-                                <input type="hidden" name="_csrf" value="<?= $e($csrf()) ?>">
-                                <button class="dropdown-item" type="submit"><i class="bi bi-box-arrow-right"></i> Sign out</button>
-                            </form>
-                        </li>
-                    </ul>
+    <nav class="navbar navbar-expand-md app-navbar sticky-top">
+        <div class="container">
+            <a class="navbar-brand brand" href="<?= $e($url('/')) ?>"><i class="bi bi-egg-fried"></i> Recipe Box</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-label="Menu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="nav">
+                <div class="ms-auto d-flex flex-wrap gap-2 py-2 py-md-0 align-items-center">
+                    <?php if ($can('/recipes/new')): ?>
+                        <a class="btn btn-primary<?= $active === 'new' ? ' active' : '' ?>" href="<?= $e($url('/recipes/new')) ?>"><i class="bi bi-plus-lg"></i> New recipe</a>
+                    <?php endif; ?>
+                    <?php if ($can('/import')): ?>
+                        <a class="btn btn-outline-secondary<?= $active === 'import' ? ' active' : '' ?>" href="<?= $e($url('/import')) ?>"><i class="bi bi-upload"></i> Import JSON</a>
+                    <?php endif; ?>
+                    <?php if ($can('show')): ?>
+                        <a class="btn btn-outline-secondary" href="<?= $e($url('/api/recipes/export')) ?>"><i class="bi bi-download"></i> Export all</a>
+                    <?php endif; ?>
+                    <?php if ($can('/admin')): ?>
+                        <a class="btn btn-outline-secondary<?= $active === 'admin' ? ' active' : '' ?>" href="<?= $e($url('/admin')) ?>"><i class="bi bi-shield-lock"></i> Admin</a>
+                    <?php endif; ?>
+                    <button class="btn btn-outline-secondary" id="btnTheme" type="button" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi bi-moon-stars"></i></button>
+                    <?php if ($user !== null): ?>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-person-circle"></i> <?= $e($user['fullname'] !== '' ? $user['fullname'] : $user['id']) ?>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><span class="dropdown-item-text small text-body-secondary">Signed in as <strong><?= $e($user['id']) ?></strong></span></li>
+                                <?php if ($can('/account/password')): ?>
+                                    <li><a class="dropdown-item" href="<?= $e($url('/account/password')) ?>"><i class="bi bi-key"></i> Change password</a></li>
+                                <?php endif; ?>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="post" action="<?= $e($url('/logout')) ?>">
+                                        <input type="hidden" name="_csrf" value="<?= $e($csrf()) ?>">
+                                        <button class="dropdown-item" type="submit"><i class="bi bi-box-arrow-right"></i> Sign out</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    <?php elseif ($authEnabled && $active !== 'login'): ?>
+                        <a class="btn btn-outline-primary" href="<?= $e($url('/login')) ?>"><i class="bi bi-box-arrow-in-right"></i> Sign in</a>
+                    <?php endif; ?>
                 </div>
-                <?php elseif ($authEnabled && $active !== 'login'): ?>
-                <a class="btn btn-outline-primary" href="<?= $e($url('/login')) ?>"><i class="bi bi-box-arrow-in-right"></i> Sign in</a>
-                <?php endif; ?>
             </div>
         </div>
-    </div>
-</nav>
+    </nav>
 
-<?= $content ?>
+    <?= $content ?>
 
-<footer class="py-4 text-center text-body-secondary small no-print">
-    Recipe Box · PHP <?= PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION ?> · Bootstrap · jQuery
-</footer>
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toasts"></div>
 
-<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toasts"></div>
-
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="<?= $e($url('/assets/js/app.js')) ?>"></script>
-<?php foreach ($scripts as $script): ?>
-<script src="<?= $e($url('/assets/js/' . $script)) ?>"></script>
-<?php endforeach; ?>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= $e($url('/assets/js/app.js')) ?>"></script>
+    <?php foreach ($scripts as $script): ?>
+        <script src="<?= $e($url('/assets/js/' . $script)) ?>"></script>
+    <?php endforeach; ?>
 </body>
 </html>

@@ -26,6 +26,7 @@ final class AdminTest extends AuthWebTestCase
         self::assertStringContainsString('Administration', $overview);
         self::assertStringContainsString('5</div>', $overview, 'account count');
         self::assertStringNotContainsString('still uses the default password', $overview);
+        self::assertStringContainsString('Version ' . trim((string) file_get_contents(dirname(__DIR__, 2) . '/VERSION')), $overview);
 
         $accounts = $this->admin->get('/admin/accounts')->body();
         foreach (['Administrator', 'Edna Editor', 'Rudi Reader', 'Locked Out'] as $name) {

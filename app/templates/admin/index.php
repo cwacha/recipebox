@@ -1,13 +1,15 @@
 <?php
+
 /**
  * @var \Closure $e
  * @var \Closure $url
  * @var \Closure $can
- * @var int  $accountCount
- * @var int  $signInCount
- * @var int  $roleCount
- * @var int  $permissionCount
- * @var bool $defaultPassword
+ * @var int    $accountCount
+ * @var int    $signInCount
+ * @var int    $roleCount
+ * @var int    $permissionCount
+ * @var bool   $defaultPassword
+ * @var string $version           the application version from the root VERSION file
  */
 $tiles = [
     ['/admin/accounts', 'bi-people', $accountCount, 'Accounts', $signInCount . ' can sign in', '/admin/accounts'],
@@ -66,3 +68,6 @@ $tiles = [
         <li>The role <code>all</code> lists every permission that exists. It is kept up to date automatically.</li>
     </ul>
 </main>
+<footer class="py-4 text-center text-body-secondary small no-print">
+    Recipe Box <span class="mx-3"></span> <i class="bi bi-tag"></i> Version <?= $e($version) ?>
+</footer>

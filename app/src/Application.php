@@ -43,6 +43,8 @@ final class Application
     private readonly array $config;
     /** Explicit URL prefix of public/, null when it is detected per request. */
     private readonly ?string $baseUrl;
+    /** Contents of the VERSION file at the application root, empty when it cannot be read. */
+    private readonly string $version;
     private readonly SecurityController $security;
     private readonly WebAuth $webAuth;
     private readonly Csrf $csrf;
@@ -62,6 +64,7 @@ final class Application
         $this->config = $config;
         $this->rootDir = $config['base_dir'] === '' ? $rootDir : $config['base_dir'];
         $this->baseUrl = $config['base_url'];
+        $this->version = $this->readVersion();
 
         $this->security = AuthFactory::create($this->config['auth']);
         $this->webAuth = new WebAuth(
@@ -195,6 +198,7 @@ final class Application
         $csrf = $this->csrf;
 
         return [
+            'version' => $this->version,
             'authEnabled' => $security->isEnabled(),
             'user' => $identity->accountId !== null && !$identity->isGuest() ? $security->getPublicAccount($identity->accountId) : null,
             'isGuest' => $identity->isGuest(),
@@ -202,6 +206,18 @@ final class Application
             'csrf' => static fn (): string => $csrf->token($session),
             'flash' => static fn (): array => $session->pullFlash(),
         ];
+    }
+
+    /**
+     * The VERSION file at the application root is a single line; the whole text is used. Missing or
+     * unreadable files simply yield an empty version.
+     */
+    private function readVersion(): string
+    {
+        $file = $this->rootDir . '/VERSION';
+        $version = is_file($file) ? file_get_contents($file) : false;
+
+        return $version === false ? 'dev' : trim($version);
     }
 
     private function defaultRepository(): RecipeRepositoryInterface

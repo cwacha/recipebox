@@ -68,6 +68,7 @@ final class View
         ];
 
         $defaults = [
+            'version' => '',
             'authEnabled' => false,
             'user' => null,
             'isGuest' => false,
