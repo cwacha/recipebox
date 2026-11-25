@@ -1,5 +1,5 @@
 {
-    "name": "cwacha/recipe-box",
+    "name": "cwacha/recipebox",
     "description": "Recipe Box \u2013 a small PHP 8 / Bootstrap / jQuery web app to manage cooking recipes.",
     "type": "project",
     "license": "MIT",
@@ -29,7 +29,8 @@
         ],
         "test": "phpunit",
         "migrate": "@php bin/migrate",
-        "account": "@php bin/account"
+        "account": "@php bin/account",
+        "permissions": "bin/dev-permissions"
     },
     "config": {
         "sort-packages": true,

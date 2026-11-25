@@ -84,7 +84,7 @@
         const $btn = $('#btnSave').prop('disabled', true);
         if (remote) $btn.html('<span class="spinner-border spinner-border-sm"></span> Downloading picture…');
 
-        R.api(id ? 'PUT' : 'POST', id ? '/api/recipes/' + encodeURIComponent(id) : '/api/recipes', collect())
+        R.api('POST', id ? '/api/recipes/' + encodeURIComponent(id) : '/api/recipes', collect())
             .done(function (r) {
                 saved = true;
                 const base = id ? 'Recipe updated.' : 'Recipe created.';

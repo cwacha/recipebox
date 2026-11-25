@@ -11,7 +11,7 @@
 
     $('#btnConfirmDelete').on('click', function () {
         const $btn = $(this).prop('disabled', true);
-        R.api('DELETE', '/api/recipes/' + encodeURIComponent(id))
+        R.api('POST', '/api/recipes/' + encodeURIComponent(id) + '/delete')
             .done(function () {
                 R.flash('Recipe deleted.');
                 location.href = R.base + '/';

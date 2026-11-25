@@ -38,18 +38,33 @@ final class Request
         }
     }
 
-    public static function fromGlobals(): self
+    /**
+     * @param string|null $baseUrl the URL prefix the application is served under ('' = document root),
+     *                             null to derive it from the front controller location (SCRIPT_NAME)
+     */
+    public static function fromGlobals(?string $baseUrl = null): self
     {
         $uriPath = rawurldecode((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH));
 
-        // Directory the app is served from (e.g. "" or "/recipes"), derived from the front controller location
-        $script = $_SERVER['SCRIPT_NAME'] ?? '/index.php';
-        $base = rtrim(str_replace('\\', '/', dirname($script)), '/');
-        if ($base !== '' && !str_starts_with($uriPath, $base . '/') && $uriPath !== $base) {
-            $base = '';
+        if ($baseUrl !== null) {
+            // explicit setting: it is authoritative, also for links when a proxy already stripped the prefix
+            $base = self::normalizeBaseUrl($baseUrl);
+        } else {
+            // derive it from the location of the front controller
+            // ("" at a document root, "/~user/recipes/public" inside a user directory, ...)
+            $script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/index.php');
+            $base = rtrim(dirname($script), '/');
+            if ($base === '.' || $base === '/') {
+                $base = '';
+            }
+            if ($base !== '' && $uriPath !== $base && !str_starts_with($uriPath, $base . '/')) {
+                $base = '';
+            }
         }
 
-        $path = '/' . trim(substr($uriPath, strlen($base)), '/');
+        $path = $base !== '' && ($uriPath === $base || str_starts_with($uriPath, $base . '/'))
+            ? '/' . trim(substr($uriPath, strlen($base)), '/')
+            : $uriPath;
 
         return new self(
             method: strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET'),
@@ -74,6 +89,37 @@ final class Request
         }
 
         return $headers;
+    }
+
+    /** '' means the document root, otherwise a prefix such as "/~user/recipebox/public". */
+    public static function normalizeBaseUrl(string $url): string
+    {
+        $url = trim($url);
+        if (str_starts_with($url, '/')) {
+            $path = (string) strtok($url, '?#'); // a path (possibly protocol relative: //host is not supported)
+        } else {
+            $parts = parse_url($url);
+            $path = is_array($parts) ? (string) ($parts['path'] ?? '') : '';
+        }
+        $path = '/' . trim((string) preg_replace('#/+#', '/', $path), '/');
+        if (str_contains($path, '..') || str_contains($path, '\\')) {
+            return '';
+        }
+
+        return $path === '/' ? '' : rtrim($path, '/');
+    }
+
+    /** The same request as seen under another URL prefix (e.g. from the configured base URL). */
+    public function withBasePath(string $basePath): self
+    {
+        $copy = new self(
+            $this->method, $this->path, $basePath, $this->query, $this->rawBody, $this->files,
+            $this->post, $this->cookies, $this->headers, $this->server,
+            $this->attributes['session'] ?? null,
+        );
+        $copy->attributes = $this->attributes;
+
+        return $copy;
     }
 
     public function with(string $key, mixed $value): self

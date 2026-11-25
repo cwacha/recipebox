@@ -1,0 +1,52 @@
+#!/bin/sh
+# Makes the folders the application writes to usable by the web server user *and* by you.
+#
+#   bin/dev-permissions [web-user]
+#
+# Use this when the app runs under Apache/nginx but the files belong to your login account (the usual case for
+# ~/Sites). The web server needs to write sessions, local account/role changes, uploaded pictures and imported
+# pictures. On macOS this uses ACLs with inheritance so both accounts can keep writing new files; on Linux it
+# uses a shared group.
+set -eu
+
+root=$(cd "$(dirname "$0")/.." && pwd)
+web=${1:-_www}
+me=$(whoami)
+dirs="var var/state var/sessions public/uploads public/images"
+
+if [ "$me" = "$web" ]; then
+    echo "The web server already runs as $me, nothing to do."
+    exit 0
+fi
+
+for dir in $dirs; do
+    mkdir -p "$root/$dir"
+done
+
+case "$(uname -s)" in
+    Darwin)
+        # directories need "execute" (search) as well, otherwise another user cannot even enter them
+        dir_acl="allow read,write,execute,delete,append,file_inherit,directory_inherit"
+        file_acl="allow read,write,delete,append"
+        for dir in $dirs; do
+            # files already owned by the web server (e.g. an old session) are skipped: it needs no help there
+            find "$root/$dir" -type d -exec chmod +a "$web $dir_acl" {} + 2>/dev/null || true
+            find "$root/$dir" -type f -exec chmod +a "$web $file_acl" {} + 2>/dev/null || true
+            find "$root/$dir" -type d -exec chmod +a "$me $dir_acl" {} + 2>/dev/null || true
+            find "$root/$dir" -type f -exec chmod +a "$me $file_acl" {} + 2>/dev/null || true
+        done
+        echo "Granted read/write access to $web and $me for: $dirs (macOS ACLs, inherited by new files)."
+        ;;
+    *)
+        for dir in $dirs; do
+            chgrp -R "$web" "$root/$dir"
+            chmod -R g+rwX "$root/$dir"
+            find "$root/$dir" -type d -exec chmod g+s {} +
+        done
+        echo "Group $web now owns and may write: $dirs (setgid so new files keep the group)."
+        echo "If this failed, run it with sudo or add $me to the $web group."
+        ;;
+esac
+
+echo
+echo "Check with:  curl -i http://localhost/~$me/recipes/claude/public/"

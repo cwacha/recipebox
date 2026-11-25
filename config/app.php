@@ -5,6 +5,16 @@ declare(strict_types=1);
 $state = dirname(__DIR__) . '/var/state';
 
 return [
+    // Filesystem root of the application (var/, defaults/, templates/, public/). Defaults to the folder this
+    // file is in. Override it with RECIPES_BASE_DIR when the code and the writable data live apart.
+    'base_dir' => getenv('RECIPES_BASE_DIR') ?: dirname(__DIR__),
+
+    // URL under which public/ is served: '' for a document root, or a prefix such as
+    // "/~user/recipebox/public". null (the default) detects it from the request, which is what you want
+    // for the PHP built-in server and normal Apache/nginx setups. Set RECIPES_BASE_URL to make it explicit,
+    // e.g. behind a reverse proxy that strips a prefix.
+    'base_url' => getenv('RECIPES_BASE_URL') === false ? null : rtrim((string) getenv('RECIPES_BASE_URL'), '/'),
+
     // Persistence backend: "json" (single file) or "sqlite" (database, needs the pdo_sqlite extension).
     // Use "php bin/migrate json sqlite" to copy existing recipes when switching.
     'storage' => getenv('RECIPES_STORAGE') ?: 'json',

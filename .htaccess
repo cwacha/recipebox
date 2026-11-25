@@ -1,0 +1,14 @@
+# The web root is public/. This file protects the rest of the project (source code, var/state with password
+# hashes, defaults/, composer files, .git) when the project folder itself is inside the document root, for
+# example http://localhost/~user/Sites/recipebox/ with the application under .../public/.
+# public/.htaccess grants access again for that one folder.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
+
+Options -Indexes
+DirectoryIndex disabled

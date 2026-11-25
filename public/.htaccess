@@ -1,9 +1,26 @@
-RewriteEngine On
+# This folder is the only part of the project that may be served. It is often reached through a URL prefix
+# such as /~user/recipebox/public; the application detects the prefix itself (or use base_url in
+# config/app.php / RECIPES_BASE_URL to set it explicitly).
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Allow from all
+</IfModule>
 
-# Hand the Authorization header (HTTP Basic for API clients) to PHP
-RewriteCond %{HTTP:Authorization} .
-RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+Options -Indexes
+DirectoryIndex index.php
 
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.php [L]
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Hand the Authorization header (HTTP Basic for API clients) to PHP
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Everything that is not an existing file or folder goes to the front controller
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L]
+</IfModule>

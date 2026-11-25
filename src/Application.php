@@ -38,23 +38,30 @@ use Throwable;
 final class Application
 {
     private readonly Router $router;
+    private readonly string $rootDir;
     /** @var array<string, mixed> */
     private readonly array $config;
+    /** Explicit URL prefix of public/, null when it is detected per request. */
+    private readonly ?string $baseUrl;
     private readonly SecurityController $security;
     private readonly WebAuth $webAuth;
     private readonly Csrf $csrf;
 
     /** @param array<string, mixed> $config overrides for config/app.php */
     public function __construct(
-        private readonly string $rootDir,
+        string $rootDir,
         private readonly ?RecipeRepositoryInterface $repository = null,
         private readonly bool $debug = false,
         private readonly ?ImageFetcher $fetcher = null,
         array $config = [],
     ) {
         $config = array_replace_recursive(require $rootDir . '/config/app.php', $config);
-        $config['auth'] = AuthFactory::normalize((array) ($config['auth'] ?? []), $rootDir);
+        $config['base_dir'] = rtrim((string) ($config['base_dir'] ?? $rootDir), '/');
+        $config['base_url'] = ($config['base_url'] ?? null) === null ? null : Request::normalizeBaseUrl((string) $config['base_url']);
+        $config['auth'] = AuthFactory::normalize((array) ($config['auth'] ?? []), $config['base_dir']);
         $this->config = $config;
+        $this->rootDir = $config['base_dir'] === '' ? $rootDir : $config['base_dir'];
+        $this->baseUrl = $config['base_url'];
 
         $this->security = AuthFactory::create($this->config['auth']);
         $this->webAuth = new WebAuth(
@@ -68,12 +75,15 @@ final class Application
 
     public function run(?Request $request = null): void
     {
-        $this->handle($request ?? Request::fromGlobals())->send();
+        $this->handle($request ?? Request::fromGlobals($this->baseUrl))->send();
     }
 
     public function handle(Request $request): Response
     {
         $identity = null;
+        if ($this->baseUrl !== null) {
+            $request = $request->withBasePath($this->baseUrl);
+        }
 
         try {
             $session = $request->attribute('session') ?? Session::native($this->webAuth->sessionOptions($request), $request->cookies);
@@ -252,6 +262,10 @@ final class Application
             ->add('GET', '/api/recipes', $recipes->index(...), 'show')
             ->add('POST', '/api/recipes', $recipes->store(...), 'recipe_create')
             ->add('POST', '/api/recipes/import', $recipes->import(...), 'recipe_import')
+            // The web interface uses POST for everything, because many Apache setups only allow GET and POST.
+            // PUT and DELETE remain for API clients that can send them.
+            ->add('POST', '/api/recipes/{id}/delete', $recipes->destroy(...), 'recipe_delete')
+            ->add('POST', '/api/recipes/{id}', $recipes->update(...), 'recipe_edit')
             ->add('GET', '/api/recipes/export', $recipes->exportAll(...), 'show')
             ->add('GET', '/api/recipes/{id}', $recipes->show(...), 'show')
             ->add('GET', '/api/recipes/{id}/export', $recipes->export(...), 'show')

@@ -18,8 +18,57 @@ Open <http://localhost:8000> and sign in with **`admin` / `admin`**. You are tak
 Requirements: PHP 8.2+ with `json`, `fileinfo` and `curl` (plus `pdo_sqlite` for SQLite storage, `intl` is used for slugs when present), Composer. Bootstrap, Bootstrap Icons, jQuery and the web fonts
 load from CDNs, so the browser needs internet access.
 
-On Apache, point the document root at `public/` (`.htaccess` is included). Under nginx, route unknown paths to `public/index.php`.
-`var/state/`, `var/sessions/`, `public/images/` and `public/uploads/` must be writable by the web server (and nothing outside `public/` may be served).
+On Apache, point the document root at `public/` (`.htaccess` is included) and allow `.htaccess` overrides
+(`AllowOverride FileInfo AuthConfig Options`). Under nginx, route unknown paths to `public/index.php`.
+`var/state/`, `var/sessions/`, `public/images/` and `public/uploads/` must be writable by the web server, and nothing
+outside `public/` may be served (see *Server locations*).
+
+### Server locations: base_dir and base_url
+
+Two settings describe where the application lives (both in `config/app.php`, overridable by environment variables):
+
+| Setting | Environment | Meaning |
+|---|---|---|
+| `base_dir` | `RECIPES_BASE_DIR` | filesystem root: `var/`, `defaults/`, `templates/`, `public/`. Default: the project folder. Set it when the code and the writable data live apart. |
+| `base_url` | `RECIPES_BASE_URL` | URL prefix under which `public/` is served: `''` for a document root, `/~user/recipebox/public` for the example below. `null` (default) detects it from every request (`SCRIPT_NAME`), which covers the built-in server as well as Apache/nginx at the root or in a subdirectory. Set it explicitly behind a reverse proxy that strips the prefix. |
+
+With the default `null` nothing has to be configured for any of these:
+
+```text
+http://localhost:8000/                          composer start (PHP built-in server, public/ as root)
+http://localhost/recipebox/                     Apache virtual host with DocumentRoot …/public
+http://localhost/~user/recipebox/public/        Apache user directory (see below)
+```
+
+All links, form targets, redirects, cookie paths and API calls derive from that prefix; nothing is hard-coded to `/`.
+
+### Apache user directory example
+
+For `http://localhost/~user/recipebox/public/` (Homebrew Apache with `UserDir Sites`):
+
+1. **Only `public/` may be reached.** The project has a `.htaccess` in its root that denies everything; `public/.htaccess`
+   grants access again for that folder and sends unknown paths to `index.php`. So
+   `…/recipebox/composer.json`, `…/var/state/recipes.json` or `…/.git/` answer `403`, while `…/public/` works.
+   This needs `AllowOverride FileInfo AuthConfig Options` (the Homebrew `extra/httpd-userdir.conf` allows it).
+2. **The web server must be able to write.** Apache usually runs as `_www` while the files belong to you, so sessions,
+   accounts/roles, uploads and imported pictures cannot be saved. Run once:
+
+   ```bash
+   bin/dev-permissions            # macOS: ACLs for _www and you; Linux: shared group, web user as argument
+   ```
+
+   It makes `var/`, `var/state/`, `var/sessions/`, `public/uploads/` and `public/images/` writable for both accounts;
+   new files inherit this, so `bin/account` and the CLI keep working next to Apache.
+3. Open `http://localhost/~user/recipebox/public/`.
+
+The URL prefix is detected automatically. If you serve it behind a proxy under yet another path, set
+`RECIPES_BASE_URL=/that/prefix` (and `RECIPES_BASE_DIR=/path/to/project` when needed).
+
+### Why the web interface uses POST
+
+Many Apache installations (`Require method GET POST OPTIONS`) block `PUT` and `DELETE`. The pages therefore create,
+change and delete recipes with `POST /api/recipes`, `POST /api/recipes/{id}` and `POST /api/recipes/{id}/delete`.
+The REST-style `PUT` and `DELETE` routes remain for API clients that can send them.
 
 ## Pages
 
@@ -187,12 +236,13 @@ public/            web root: index.php (front controller), assets (app.js shared
                    images (recipe photos), uploads (user uploads)
 var/state/         persistence: recipes.json or recipes.sqlite, local account/role changes, tokens (not versioned)
 var/sessions/      PHP sessions (not versioned)
-config/app.php     choose the storage backend and file locations
+config/app.php     storage backend, base_dir/base_url, authentication settings
 bin/migrate        copies recipes between storage backends
 bin/account        list accounts, set a password, create an account (recovery)
+bin/dev-permissions  lets the web server write var/, var/sessions/, uploads and images
 defaults/          seed data for a fresh install: recipes.json, images/, and the built-in accounts, roles and access
 src/
-  Application.php  wiring, routes, error handling
+  Application.php  wiring, routes, permission per route, base_dir/base_url
   Auth/            SecurityController, AuthenticatorDefault, AuthorizerDefault (+ Contract/), WebAuth, Csrf, LayeredStore
   Http/            Request, Response, JsonResponse, RedirectResponse, Router, Session, Cookie
   Controller/      AbstractController -> RecipeController, UploadController, PageController, AuthController, AdminController
