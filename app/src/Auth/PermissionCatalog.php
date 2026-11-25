@@ -30,6 +30,8 @@ final class PermissionCatalog
         'recipe_edit' => 'Save changes to a recipe',
         'recipe_delete' => 'Delete a recipe',
         'recipe_import' => 'Import recipes from JSON',
+        'recipe_export' => 'Download a recipe as JSON',
+        'recipe_export_all' => 'Download all recipes as JSON',
         'image_upload' => 'Upload a picture',
         'account_edit' => 'Save an account and its role assignment',
         'account_password' => 'Set the password of an account',

@@ -282,9 +282,9 @@ final class Application
             // PUT and DELETE remain for API clients that can send them.
             ->add('POST', '/api/recipes/{id}/delete', $recipes->destroy(...), 'recipe_delete')
             ->add('POST', '/api/recipes/{id}', $recipes->update(...), 'recipe_edit')
-            ->add('GET', '/api/recipes/export', $recipes->exportAll(...), 'show')
+            ->add('GET', '/api/recipes/export', $recipes->exportAll(...), 'recipe_export_all')
             ->add('GET', '/api/recipes/{id}', $recipes->show(...), 'show')
-            ->add('GET', '/api/recipes/{id}/export', $recipes->export(...), 'show')
+            ->add('GET', '/api/recipes/{id}/export', $recipes->export(...), 'recipe_export')
             ->add('PUT', '/api/recipes/{id}', $recipes->update(...), 'recipe_edit')
             ->add('DELETE', '/api/recipes/{id}', $recipes->destroy(...), 'recipe_delete')
             ->add('POST', '/api/uploads', $uploads->image(...), 'image_upload');

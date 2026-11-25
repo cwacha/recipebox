@@ -4,6 +4,7 @@
  * @var \Closure $url
  * @var \Closure $img
  * @var \Closure $minutes
+ * @var \Closure $can
  * @var int      $servings
  * @var \App\Model\Recipe $recipe
  */
@@ -37,7 +38,9 @@ $src = $img($recipe->image);
         </div>
         <div class="d-flex gap-2 flex-wrap no-print">
             <button type="button" class="btn btn-outline-secondary" id="btnPrint"><i class="bi bi-printer"></i> Print</button>
-            <a class="btn btn-outline-secondary" href="<?= $e($url('/api/recipes/' . $recipe->id . '/export')) ?>"><i class="bi bi-filetype-json"></i> JSON</a>
+            <?php if ($can('recipe_export')): ?>
+                <a class="btn btn-outline-secondary" href="<?= $e($url('/api/recipes/' . $recipe->id . '/export')) ?>"><i class="bi bi-filetype-json"></i> JSON</a>
+            <?php endif; ?>
             <?php if ($can('/recipes/edit')): ?>
                 <a class="btn btn-primary" href="<?= $e($url('/recipes/' . $recipe->slug . '/edit')) ?>"><i class="bi bi-pencil"></i> Edit</a>
             <?php endif; ?>

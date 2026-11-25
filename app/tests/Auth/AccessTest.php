@@ -84,6 +84,27 @@ final class AccessTest extends AuthWebTestCase
         self::assertSame(204, $editor->json('DELETE', '/api/recipes/' . Browser::data($created)['id'])->status());
     }
 
+    public function testExportsNeedTheirOwnPermission(): void
+    {
+        $reader = $this->loggedIn('rd', 'readerpass1');
+        self::assertSame(200, $reader->json('GET', '/api/recipes/' . $this->recipeId . '/export')->status(), 'readers may export a single recipe');
+        self::assertSame(403, $reader->json('GET', '/api/recipes/export')->status(), 'bulk export is not implied by reading');
+        $recipePage = $reader->get('/recipes/' . $this->recipeSlug)->body();
+        self::assertStringContainsString('filetype-json', $recipePage, 'the single export button is shown');
+        self::assertStringNotContainsString('Export all', $reader->get('/')->body(), 'the bulk export button is hidden');
+
+        // a role that may read recipes but has neither export permission
+        $security = $this->security();
+        $security->saveRole('viewer', ['show', '/', '/recipes']);
+        $security->saveAccount('viewer', ['password' => 'viewer-password'], ['viewer']);
+
+        $viewer = $this->browser(app: $this->app());
+        self::assertSame(303, $viewer->login('viewer', 'viewer-password')->status());
+        self::assertSame(403, $viewer->json('GET', '/api/recipes/' . $this->recipeId . '/export')->status());
+        self::assertSame(403, $viewer->json('GET', '/api/recipes/export')->status());
+        self::assertStringNotContainsString('filetype-json', $viewer->get('/recipes/' . $this->recipeSlug)->body());
+    }
+
     public function testChangesNeedAValidCsrfToken(): void
     {
         $editor = $this->loggedIn('ed', 'editorpass1');

@@ -55,7 +55,7 @@
                     <?php if ($can('/import')): ?>
                         <a class="btn btn-outline-secondary<?= $active === 'import' ? ' active' : '' ?>" href="<?= $e($url('/import')) ?>"><i class="bi bi-upload"></i> Import JSON</a>
                     <?php endif; ?>
-                    <?php if ($can('show')): ?>
+                    <?php if ($can('recipe_export_all')): ?>
                         <a class="btn btn-outline-secondary" href="<?= $e($url('/api/recipes/export')) ?>"><i class="bi bi-download"></i> Export all</a>
                     <?php endif; ?>
                     <?php if ($can('/admin')): ?>

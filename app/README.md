@@ -118,7 +118,7 @@ allow opening a page; *actions* are words (`recipe_delete`) and allow doing some
 |---|---|
 | `all` | every permission, enumerated; maintained automatically (contains everything any role mentions), cannot be edited or deleted |
 | `admin` | the whole administration (accounts, roles, passwords) |
-| `editor` | create, edit, delete and import recipes, upload pictures, change the own password |
+| `editor` | create, edit, delete, import and export recipes, upload pictures, change the own password |
 | `reader` | open the recipe list and recipes |
 
 Shipped accounts: `admin` (role `all`, password `admin`) and `guest` (role `reader`, cannot sign in).
@@ -294,7 +294,7 @@ To reset to the sample recipes, delete the storage file. Your own recipes and up
 
 ### REST API
 
-All calls need the permission of their action (`show` for reads, `recipe_create`, `recipe_edit`, `recipe_delete`, `recipe_import`, `image_upload`).
+All calls need the permission of their action (`show` for reads, `recipe_create`, `recipe_edit`, `recipe_delete`, `recipe_import`, `recipe_export`, `recipe_export_all`, `image_upload`).
 Use HTTP Basic, or a session with the `X-CSRF-Token` header.
 
 | Method | Path | |
