@@ -1,10 +1,25 @@
 # Defaults
 
-Seed data for a fresh installation.
+This directory contains application defaults and example data. Both are read
+by the application; neither is meant to be edited.
 
-- `recipes.json`: the sample recipes
-- `images/`: their photos
+## Application defaults
 
-On the first request, when the configured storage file (`var/state/recipes.json` or `recipes.sqlite`) does not exist
-yet, the app saves these recipes into it and copies the images to `public/images/` (existing files are never
-overwritten). Delete the storage file to start over with the defaults.
+These files are required for the whole lifecycle of the application:
+
+- `config.php`: the complete default configuration, read before `config/config.php`
+- `accounts.json`, `roles.json`, `access.json`: the built-in accounts, roles
+  and permissions
+
+## Seed data
+
+The `seed/` directory is only used once, when the configured recipe storage
+does not exist yet:
+
+- `seed/recipes.json`: the sample recipes
+- `seed/images/`: their photos
+
+On the first request the `Seeder` saves these recipes into the new storage file
+(`var/state/recipes.json` or `recipes.sqlite`) and copies the images to
+`public/images/` (existing files are never overwritten). Delete the
+storage file to start over with the seed data.

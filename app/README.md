@@ -23,13 +23,21 @@ On Apache, point the document root at `public/` (`.htaccess` is included) and al
 `var/state/`, `var/sessions/`, `public/images/` and `public/uploads/` must be writable by the web server, and nothing
 outside `public/` may be served (see *Server locations*).
 
-### Server locations: base_dir and base_url
+### Configuration
 
-Two settings describe where the application lives (both in `config/app.php`, overridable by environment variables):
+The complete default configuration lives in `defaults/config.php`, including the comments for every setting. That
+file is read first and is replaced on upgrades, so do not edit it. Put local changes in `config/config.php`; the
+application merges that file over the defaults. Overrides passed directly to the application are applied last.
+
+All settings are flat. Nested sections use a prefix instead of a nested array: `llm_endpoint`, `auth_enabled`,
+`auth_cookie_secure`, and so on.
+
+### Server location: base_url
+
+The application's filesystem root is fixed by `BASEDIR` in `src/constants.php`. Only the public URL prefix is configurable:
 
 | Setting | Environment | Meaning |
 |---|---|---|
-| `base_dir` | `RECIPES_BASE_DIR` | filesystem root: `var/`, `defaults/`, `templates/`, `public/`. Default: the project folder. Set it when the code and the writable data live apart. |
 | `base_url` | `RECIPES_BASE_URL` | URL prefix under which `public/` is served: `''` for a document root, `/~user/recipebox/public` for the example below. `null` (default) detects it from every request (`SCRIPT_NAME`), which covers the built-in server as well as Apache/nginx at the root or in a subdirectory. Set it explicitly behind a reverse proxy that strips the prefix. |
 
 With the default `null` nothing has to be configured for any of these:
@@ -62,7 +70,7 @@ For `http://localhost/~user/recipebox/public/` (Homebrew Apache with `UserDir Si
 3. Open `http://localhost/~user/recipebox/public/`.
 
 The URL prefix is detected automatically. If you serve it behind a proxy under yet another path, set
-`RECIPES_BASE_URL=/that/prefix` (and `RECIPES_BASE_DIR=/path/to/project` when needed).
+`RECIPES_BASE_URL=/that/prefix`.
 
 ### Why the web interface uses POST
 
@@ -127,8 +135,8 @@ Shipped accounts: `admin` (role `all`, password `admin`) and `guest` (role `read
 list (the implicit `show`). Visitors who are not signed in are sent to the login and come back to where they wanted to go.
 The API answers `401` (sign in) or `403`.
 
-**Guests.** Visitors who are not signed in act as the account named in `auth.guest_account` (default `guest`, read only).
-Set it to an empty string and everybody has to sign in. **Authentication off:** `RECIPES_AUTH=0` (or `auth.enabled`) lets everybody
+**Guests.** Visitors who are not signed in act as the account named in `auth_guest_account` (default `guest`, read only).
+Set it to an empty string and everybody has to sign in. **Authentication off:** `RECIPES_AUTH=0` (or `auth_enabled = false`) lets everybody
 do everything, including the administration; use this only on a trusted machine.
 
 **Credentials.** Login form, HTTP Basic (for API clients; `curl -u editor:secret …/api/recipes`), and a *keep me signed in*
@@ -140,8 +148,8 @@ cookie. Several sources are accepted only if they name the same account; anythin
   when the account is deleted, disabled or its password changes.
 - **Persistent login** uses a random token (only its SHA-256 is stored in `var/state/auth_tokens.json`), expires after 30 days, is replaced at every
   use, and is revoked at sign-out and password change. It never contains a password.
-- **Cookies** are `HttpOnly`, `SameSite=Lax` and `Secure` when the request came over HTTPS (all configurable under `auth` in `config/app.php`).
-  Behind a reverse proxy that terminates TLS, set `cookie_secure` to `true`.
+- **Cookies** are `HttpOnly`, `SameSite=Lax` and `Secure` when the request came over HTTPS (all configurable with the `auth_*` settings in `config/config.php`).
+  Behind a reverse proxy that terminates TLS, set `auth_cookie_secure` to `true`.
 - **CSRF**: every change made with cookies (forms and scripts) needs the session's token (`_csrf` field or `X-CSRF-Token` header). HTTP Basic requests
   carry their credentials each time and need no token.
 - **Guessing**: 5 failed sign-ins per account and address lock that combination for 15 minutes (and 20 per address). Unknown accounts take as
@@ -168,8 +176,8 @@ php bin/account create anna editor,reader
 
 ### Swapping providers
 
-`SecurityController` only knows the two interfaces. Choose providers by name in `config/app.php` (`auth.authenticator`, `auth.authorizer`);
-register your own with `'authenticators' => ['ldap' => fn (array $auth) => new LdapAuthenticator(...)]`. Names come from this registry only, never from a request.
+`SecurityController` only knows the two interfaces. Choose providers by name with `auth_authenticator` and
+`auth_authorizer`. New provider types are registered in the factory in code; names come from that registry only, never from a request.
 
 ## Features
 
@@ -184,26 +192,24 @@ register your own with `'authenticators' => ['ldap' => fn (array $auth) => new L
 
 ### Import from a URL (AI)
 
-The import page can ask an external LLM to read a recipe from a web page. Set the endpoint in `config/app.php` to
+The import page can ask an external LLM to read a recipe from a web page. Set the endpoint in `config/config.php` to
 enable it (an empty endpoint hides the feature entirely):
 
 ```php
-'llm' => [
-    'endpoint' => 'https://api.openai.com/v1/chat/completions',
-    'api_key' => 'sk-…',
-    'model' => 'gpt-4o-mini',
-    'prompt' => '…',       // {html} is where the page HTML goes; without it the HTML is appended
-    'timeout' => 60,
-],
+'llm_endpoint' => 'https://api.openai.com/v1/chat/completions',
+'llm_api_key' => 'sk-…',
+'llm_model' => 'gpt-4o-mini',
+'llm_prompt' => '…',       // {html} is where the page HTML goes; without it the HTML is appended
+'llm_timeout' => 60,
 ```
 
 | Setting | Environment | Meaning |
 |---|---|---|
-| `endpoint` | `RECIPES_LLM_ENDPOINT` | OpenAI-compatible chat completions URL. Empty = feature disabled. |
-| `api_key` | `RECIPES_LLM_API_KEY` | Sent as `Authorization: Bearer …`; may be empty for local services. It never reaches the browser. |
-| `model` | `RECIPES_LLM_MODEL` | Model name, default `gpt-4o-mini`. |
-| `prompt` | `RECIPES_LLM_PROMPT` | Instruction for the model. `{html}` is replaced with the page source, `{url}` with the address; a prompt without `{html}` gets the HTML appended. |
-| `timeout` | `RECIPES_LLM_TIMEOUT` | Request timeout in seconds, default 60. |
+| `llm_endpoint` | `RECIPES_LLM_ENDPOINT` | OpenAI-compatible chat completions URL. Empty = feature disabled. |
+| `llm_api_key` | `RECIPES_LLM_API_KEY` | Sent as `Authorization: Bearer …`; may be empty for local services. It never reaches the browser. |
+| `llm_model` | `RECIPES_LLM_MODEL` | Model name, default `gpt-4o-mini`. |
+| `llm_prompt` | `RECIPES_LLM_PROMPT` | Instruction for the model. `{html}` is replaced with the page source, `{url}` with the address; a prompt without `{html}` gets the HTML appended. |
+| `llm_timeout` | `RECIPES_LLM_TIMEOUT` | Request timeout in seconds, default 60. |
 
 The application downloads the page itself and sends its HTML inside the prompt, so any chat-completions model can be
 used — the model does not have to be able to open URLs. The download follows the same safety rules as image import
@@ -242,7 +248,7 @@ overwritten: if `images/pasta.jpg` already exists, the new one becomes `images/p
 
 When a recipe is deleted (or its picture is replaced), its picture is deleted too, but only if it is named after that
 recipe's slug (`<slug>.<ext>` or `<slug>-2.<ext>`), not used by another recipe and not one of the default images in
-`defaults/images/`. Files with any other name are never touched.
+`defaults/seed/images/`. Files with any other name are never touched.
 
 The same applies in the editor: a web address pasted into the *Picture* field is downloaded when you save, and the
 recipe keeps the local copy. If the download fails (or the file is not an image) the form shows the error at the field
@@ -253,7 +259,7 @@ Because anonymous users can trigger downloads, the server only fetches from the 
 80/443, no credentials in the URL, private/loopback/link-local addresses (e.g. `localhost`, `192.168.x.x`,
 `169.254.169.254`) are refused for the first request and every redirect, files are limited to 8 MB / 15 s, and the content
 must really be an image. To import from a server in your own network, set `RECIPES_IMPORT_ALLOW_PRIVATE_HOSTS=1`
-(or `import_allow_private_hosts` in `config/app.php`). Requires the `curl` PHP extension.
+(or `import_allow_private_hosts` in `config/config.php`). Requires the `curl` PHP extension.
 
 ### JSON format
 
@@ -283,13 +289,16 @@ public/            web root: index.php (front controller), assets (app.js shared
                    assets/vendor/: Bootstrap, Bootstrap Icons, jQuery and the web fonts (no CDN needed)
 var/state/         persistence: recipes.json or recipes.sqlite, local account/role changes, tokens (not versioned)
 var/sessions/      PHP sessions (not versioned)
-config/app.php     storage backend, base_dir/base_url, authentication settings
+defaults/          application defaults used throughout the lifecycle: config.php, accounts.json, roles.json, access.json
+defaults/seed/     example data for a fresh install: recipes.json and images/
+config/config.php  local configuration overrides (custom settings)
 bin/migrate        copies recipes between storage backends
 bin/account        list accounts, set a password, create an account (recovery)
 bin/dev-permissions  lets the web server write var/, var/sessions/, uploads and images
-defaults/          seed data for a fresh install: recipes.json, images/, and the built-in accounts, roles and access
 src/
-  Application.php  wiring, routes, permission per route, base_dir/base_url
+  Application.php  wiring, routes, permission per route, base_url
+  Config.php       loads defaults/config.php, then config/config.php and caller overrides
+  constants.php    global filesystem constants (BASEDIR, CONFDIR, STATEDIR, ...)
   Auth/            SecurityController, AuthenticatorDefault, AuthorizerDefault (+ Contract/), WebAuth, Csrf, LayeredStore
   Http/            Request, Response, JsonResponse, RedirectResponse, Router, Session, Cookie
   Controller/      AbstractController -> RecipeController, UploadController, PageController, AuthController, AdminController
@@ -297,7 +306,7 @@ src/
   Repository/      RecipeRepositoryInterface -> AbstractRecipeRepository (search, ranking)
                    -> JsonFileRecipeRepository   (var/state/recipes.json)
                    -> SqliteRecipeRepository     (var/state/recipes.sqlite)
-                   RepositoryFactory (picks the backend from config/app.php)
+                   RepositoryFactory (picks the backend from config/config.php)
   View/            View (renders templates inside the layout, escaping helpers)
   Validation/      RecipeValidator
   Service/         ImageStorage, ImageLocalizer, RemoteFetcher + CurlImageFetcher / CurlPageFetcher (downloads), LlmRecipeExtractor + CurlLlmClient (URL import), SlugGenerator, Seeder
@@ -315,9 +324,9 @@ ranking logic (`AbstractRecipeRepository`); one test suite runs against both.
 | `json` (default) | `var/state/recipes.json` | single human-readable file, file locking and atomic writes |
 | `sqlite` | `var/state/recipes.sqlite` | needs `pdo_sqlite`; WAL mode, transactional writes, schema is created automatically |
 
-Select the backend in `config/app.php` (`'storage' => 'sqlite'`) or with an environment variable, e.g.
-`RECIPES_STORAGE=sqlite composer start`. The file locations can be changed with `RECIPES_STATE_FILE` (JSON) and
-`RECIPES_SQLITE_FILE` (SQLite).
+Select the backend in `config/config.php` (`'storage' => 'sqlite'`) or with an environment variable, e.g.
+`RECIPES_STORAGE=sqlite composer start`. The file names can be changed with `RECIPES_STATE_FILE` (JSON) and
+`RECIPES_SQLITE_FILE` (SQLite). Both are bare file names; they are always placed inside `var/state/`.
 
 **Switching an existing installation** – copy your recipes first, then change the setting:
 
@@ -334,8 +343,8 @@ a lookup by id can be done faster), register it in `RepositoryFactory`, and add 
 
 ### Seeding
 
-On the first request, if the configured storage file does not exist yet, the `Seeder` saves `defaults/recipes.json` into it
-(JSON or SQLite alike) and copies `defaults/images/*` into `public/images/` (existing files are never overwritten).
+On the first request, if the configured storage file does not exist yet, the `Seeder` saves `defaults/seed/recipes.json` into it
+(JSON or SQLite alike) and copies `defaults/seed/images/*` into `public/images/` (existing files are never overwritten).
 To reset to the sample recipes, delete the storage file. Your own recipes and uploads are not part of the defaults.
 
 ### REST API

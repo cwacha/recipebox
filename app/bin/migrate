@@ -3,11 +3,12 @@
 
 declare(strict_types=1);
 
+use App\Config;
 use App\Repository\RepositoryFactory;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
-$factory = new RepositoryFactory(require dirname(__DIR__) . '/config/app.php');
+$factory = new RepositoryFactory(Config::load());
 [, $from, $to] = $argv + [null, null, null];
 
 $fail = static function (string $message): never {
@@ -34,4 +35,4 @@ try {
 }
 
 printf("Copied %d recipes from %s to %s.\n", count($recipes), $factory->file($from), $factory->file($to));
-printf("Set \"storage\" => '%s' in config/app.php (or RECIPES_STORAGE=%s) to use it.\n", $to, $to);
+printf("Set \"storage\" => '%s' in config/config.php (or RECIPES_STORAGE=%s) to use it.\n", $to, $to);

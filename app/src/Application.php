@@ -43,7 +43,6 @@ use Throwable;
 final class Application
 {
     private readonly Router $router;
-    private readonly string $rootDir;
     /** @var array<string, mixed> */
     private readonly array $config;
     /** Explicit URL prefix of public/, null when it is detected per request. */
@@ -54,22 +53,21 @@ final class Application
     private readonly WebAuth $webAuth;
     private readonly Csrf $csrf;
 
-    /** @param array<string, mixed> $config overrides for config/app.php */
+    /** @param array<string, mixed> $config overrides for defaults/config.php and config/config.php */
     public function __construct(
-        string $rootDir,
         private readonly ?RecipeRepositoryInterface $repository = null,
         private readonly bool $debug = false,
         private readonly ?ImageFetcher $fetcher = null,
         array $config = [],
         private readonly ?RecipeExtractor $recipeExtractor = null,
         private readonly ?PageFetcher $pageFetcher = null,
+        private readonly ?ImageStorage $images = null,
     ) {
-        $config = array_replace_recursive(require $rootDir . '/config/app.php', $config);
-        $config['base_dir'] = rtrim((string) ($config['base_dir'] ?? $rootDir), '/');
+        $config = Config::load($config);
         $config['base_url'] = ($config['base_url'] ?? null) === null ? null : Request::normalizeBaseUrl((string) $config['base_url']);
-        $config['auth'] = AuthFactory::normalize((array) ($config['auth'] ?? []), $config['base_dir']);
+        $config['auth'] = AuthFactory::normalize(Config::section($config, 'auth'));
+        $config['llm'] = Config::section($config, 'llm');
         $this->config = $config;
-        $this->rootDir = $config['base_dir'] === '' ? $rootDir : $config['base_dir'];
         $this->baseUrl = $config['base_url'];
         $this->version = $this->readVersion();
 
@@ -192,7 +190,7 @@ final class Application
             return new JsonResponse(['error' => $message], $status);
         }
 
-        $html = View::forRequest($this->rootDir . '/templates', $request)
+        $html = View::forRequest(BASEDIR . '/templates', $request)
             ->page('error', ['status' => $status, 'message' => $message], 'Error ' . $status . ' – Recipe Box');
 
         return new Response($html, $status);
@@ -203,7 +201,7 @@ final class Application
     {
         $security = $this->security;
         $csrf = $this->csrf;
-        $publicDir = $this->rootDir . '/public';
+        $publicDir = BASEDIR . '/public';
 
         return [
             // Browsers cache scripts and styles without asking the server; a changed file needs a new URL.
@@ -228,7 +226,7 @@ final class Application
      */
     private function readVersion(): string
     {
-        $file = $this->rootDir . '/VERSION';
+        $file = BASEDIR . '/VERSION';
         $version = is_file($file) ? file_get_contents($file) : false;
 
         return $version === false ? 'dev' : trim($version);
@@ -241,7 +239,7 @@ final class Application
         $fresh = !$factory->exists();
         $repository = $factory->create();
         if ($fresh) {
-            (new Seeder($this->rootDir . '/defaults', $this->rootDir . '/public'))->seed($repository);
+            (new Seeder())->seed($repository);
         }
 
         return $repository;
@@ -250,13 +248,12 @@ final class Application
     private function buildRouter(): Router
     {
         $repository = $this->repository ?? $this->defaultRepository();
-        $images = new ImageStorage($this->rootDir . '/public', $this->rootDir . '/defaults');
+        $images = $this->images ?? new ImageStorage();
         $localizer = new ImageLocalizer(
             $this->fetcher ?? new CurlImageFetcher(allowPrivateHosts: (bool) ($this->config['import_allow_private_hosts'] ?? false)),
             $images,
-            $this->rootDir . '/public',
         );
-        $templates = $this->rootDir . '/templates';
+        $templates = BASEDIR . '/templates';
         $validator = new RecipeValidator();
 
         $extractor = $this->recipeExtractor;

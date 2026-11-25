@@ -20,9 +20,8 @@ final class PageTest extends TestCase
     {
         $this->dir = sys_get_temp_dir() . '/recipes-page-test-' . bin2hex(random_bytes(4));
         $this->app = new Application(
-            dirname(__DIR__),
             new JsonFileRecipeRepository($this->dir . '/recipes.json'),
-            config: ['auth' => ['enabled' => false, 'state_dir' => $this->dir . '/auth']],
+            config: ['auth_enabled' => false, 'auth_state_dir' => $this->dir . '/auth'],
         );
 
         $created = $this->app->handle(new Request('POST', '/api/recipes', '', [], json_encode([

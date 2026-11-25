@@ -7,6 +7,7 @@ namespace Tests;
 use App\Application;
 use App\Http\Request;
 use App\Repository\JsonFileRecipeRepository;
+use App\Service\ImageStorage;
 use App\Service\ImageFetchException;
 use App\Service\ImageFetcher;
 use PHPUnit\Framework\TestCase;
@@ -22,9 +23,7 @@ final class ImageImportTest extends TestCase
     protected function setUp(): void
     {
         $this->root = sys_get_temp_dir() . '/recipes-import-test-' . bin2hex(random_bytes(4));
-        mkdir($this->root . '/config', 0775, true);
         mkdir($this->root . '/public/images', 0775, true);
-        file_put_contents($this->root . '/config/app.php', '<?php return [];');
         mkdir($this->root . '/defaults/images', 0775, true);
         foreach (['carbonara.jpg', 'greek-salad.jpg'] as $default) {
             file_put_contents($this->root . '/public/images/' . $default, 'default image');
@@ -34,10 +33,14 @@ final class ImageImportTest extends TestCase
 
         $this->fetcher = new FakeFetcher();
         $this->app = new Application(
-            $this->root,
             new JsonFileRecipeRepository($this->root . '/state/recipes.json'),
             fetcher: $this->fetcher,
-            config: ['auth' => ['enabled' => false, 'state_dir' => $this->root . '/state-auth', 'defaults_dir' => dirname(__DIR__) . '/defaults']],
+            images: new ImageStorage($this->root . '/public', $this->root . '/defaults'),
+            config: [
+                'auth_enabled' => false,
+                'auth_state_dir' => $this->root . '/state-auth',
+                'auth_defaults_dir' => dirname(__DIR__) . '/defaults',
+            ],
         );
     }
 

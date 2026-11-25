@@ -53,8 +53,9 @@ final class BaseUrlTest extends TestCase
     /** @param array<string, mixed> $config */
     private function app(array $config): Application
     {
-        return new Application(dirname(__DIR__), $this->repo, config: $config + [
-            'auth' => ['enabled' => false, 'state_dir' => $this->dir . '/auth'],
+        return new Application($this->repo, config: $config + [
+            'auth_enabled' => false,
+            'auth_state_dir' => $this->dir . '/auth',
         ]);
     }
 
@@ -106,18 +107,5 @@ final class BaseUrlTest extends TestCase
         self::assertSame(self::PREFIX, $request->basePath);
         self::assertSame('/recipes/' . $this->slug, $request->path);
         self::assertStringContainsString(self::PREFIX . '/assets/css/app.css', $body);
-    }
-
-    public function testBaseDirMovesTheSiteFolder(): void
-    {
-        // templates, defaults etc. are looked up below base_dir, so code and writable data can live apart
-        $base = $this->dir . '/elsewhere';
-        mkdir($base, 0775, true);
-        symlink(dirname(__DIR__) . '/templates', $base . '/templates');
-
-        $app = $this->app(['base_dir' => $base, 'auth' => ['enabled' => false]]);
-
-        self::assertSame(200, $app->handle(new Request('GET', '/', ''))->status());
-        self::assertStringContainsString('Test Soup', $app->handle(new Request('GET', '/', ''))->body());
     }
 }

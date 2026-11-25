@@ -6,7 +6,7 @@ namespace App\Repository;
 
 use InvalidArgumentException;
 
-/** Creates the configured recipe repository (see config/app.php). */
+/** Creates the configured recipe repository (see defaults/config.php and config/config.php). */
 final class RepositoryFactory
 {
     public const DRIVERS = ['json', 'sqlite'];
@@ -48,6 +48,10 @@ final class RepositoryFactory
             ));
         }
 
-        return (string) $this->config[$driver . '_file'];
+        // The configured values are only file names; the state directory is always added here.
+        // basename() keeps older configurations that still contain a full path working.
+        $name = basename((string) $this->config[$driver . '_file']);
+
+        return STATEDIR . '/' . $name;
     }
 }

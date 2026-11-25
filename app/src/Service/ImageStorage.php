@@ -22,9 +22,15 @@ final class ImageStorage
     private const DOWNLOAD_DIR = 'images';
 
     public function __construct(
-        private readonly string $publicDir,
-        private readonly string $defaultsDir = '',
+        private readonly string $publicDir = BASEDIR . '/public',
+        private readonly string $defaultsDir = BASEDIR . '/defaults/seed',
     ) {
+    }
+
+    /** The document root that relative image paths such as "images/x.jpg" refer to. */
+    public function publicDir(): string
+    {
+        return $this->publicDir;
     }
 
     /**

@@ -6,12 +6,12 @@ declare(strict_types=1);
 use App\Auth\AuthFactory;
 use App\Auth\Exception\LockoutPrevented;
 use App\Auth\Exception\ValidationFailed;
+use App\Config;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
-$root = dirname(__DIR__);
-$config = require $root . '/config/app.php';
-$security = AuthFactory::create(AuthFactory::normalize((array) ($config['auth'] ?? []), $root));
+$config = Config::load();
+$security = AuthFactory::create(AuthFactory::normalize(Config::section($config, 'auth')));
 
 [, $command, $id, $roles] = $argv + [null, null, null, null];
 

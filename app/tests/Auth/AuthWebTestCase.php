@@ -31,17 +31,21 @@ abstract class AuthWebTestCase extends AuthTestCase
         $this->app = $this->app();
     }
 
-    /** @param array<string, mixed> $auth */
+    /** @param array<string, mixed> $auth flat auth settings without the "auth_" prefix */
     protected function app(array $auth = []): Application
     {
+        $config = [
+            'auth_defaults_dir' => $this->dir . '/defaults',
+            'auth_state_dir' => $this->dir . '/state',
+            'auth_password_cost' => 4,
+        ];
+        foreach ($auth as $key => $value) {
+            $config['auth_' . $key] = $value;
+        }
+
         return new Application(
-            dirname(__DIR__, 2),
             $this->recipes,
-            config: ['auth' => $auth + [
-                'defaults_dir' => $this->dir . '/defaults',
-                'state_dir' => $this->dir . '/state',
-                'password_cost' => 4,
-            ]],
+            config: $config,
         );
     }
 

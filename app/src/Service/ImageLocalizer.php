@@ -23,7 +23,6 @@ final class ImageLocalizer
     public function __construct(
         private readonly ImageFetcher $fetcher,
         private readonly ImageStorage $storage,
-        private readonly string $publicDir,
         private readonly float $budgetSeconds = 90.0,
     ) {
     }
@@ -67,7 +66,7 @@ final class ImageLocalizer
     /** @return array{string, ?string} */
     private function local(string $path): array
     {
-        return is_file($this->publicDir . '/' . $path)
+        return is_file($this->storage->publicDir() . '/' . $path)
             ? [$path, null]
             : ['', sprintf('image "%s" does not exist on this server, skipped', $path)];
     }

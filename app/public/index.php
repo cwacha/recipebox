@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use App\Application;
 
-$root = dirname(__DIR__);
+$autoload = dirname(__DIR__) . '/vendor/autoload.php';
 
-if (!is_file($root . '/vendor/autoload.php')) {
+if (!is_file($autoload)) {
     http_response_code(500);
     exit('Dependencies missing. Run "composer install" first.');
 }
 
-require $root . '/vendor/autoload.php';
+require $autoload;
 
-(new Application($root, debug: (bool) getenv('APP_DEBUG')))->run();
+(new Application(debug: (bool) getenv('APP_DEBUG')))->run();

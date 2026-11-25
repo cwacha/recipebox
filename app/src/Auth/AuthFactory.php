@@ -9,26 +9,26 @@ use App\Auth\Contract\AuthorizerInterface;
 use InvalidArgumentException;
 
 /**
- * Builds the security controller from the "auth" configuration. Providers are chosen by name from a registry
- * (never by a path or class name taken from a request). Further providers can be registered in the
- * configuration under "authenticators" / "authorizers" as name => callable(array $authConfig): provider.
+ * Builds the security controller from the flattened "auth_*" configuration. Providers are chosen by name
+ * from a registry (never by a path or class name taken from a request). Further providers can be registered
+ * in the registry in code as name => callable(array $authConfig): provider.
  */
 final class AuthFactory
 {
     /**
-     * @param  array<string, mixed> $config the "auth" section of config/app.php
+     * @param  array<string, mixed> $config the "auth_*" settings without their prefix
      * @return array<string, mixed> with all defaults filled in
      */
-    public static function normalize(array $config, string $rootDir): array
+    public static function normalize(array $config): array
     {
-        return $config + [
+        $config += [
             'enabled' => true,
             'guest_account' => 'guest',
             'authenticator' => 'default',
             'authorizer' => 'default',
-            'defaults_dir' => $rootDir . '/defaults',
-            'state_dir' => $rootDir . '/var/state',
-            'sessions_dir' => $rootDir . '/var/sessions',
+            'defaults_dir' => null,
+            'state_dir' => null,
+            'sessions_dir' => null,
             'session_name' => 'recipebox_session',
             'remember_cookie' => 'recipebox_remember',
             'remember_days' => 30,
@@ -39,6 +39,11 @@ final class AuthFactory
             'max_login_attempts' => 5,
             'lockout_seconds' => 900,
         ];
+        $config['defaults_dir'] ??= BASEDIR . '/defaults';
+        $config['state_dir'] ??= STATEDIR;
+        $config['sessions_dir'] ??= BASEDIR . '/var/sessions';
+
+        return $config;
     }
 
     /** @param array<string, mixed> $config normalized "auth" configuration */

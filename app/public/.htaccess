@@ -1,6 +1,6 @@
 # This folder is the only part of the project that may be served. It is often reached through a URL prefix
 # such as /~user/recipebox/public; the application detects the prefix itself (or use base_url in
-# config/app.php / RECIPES_BASE_URL to set it explicitly).
+# config/config.php / RECIPES_BASE_URL to set it explicitly).
 <IfModule mod_authz_core.c>
     Require all granted
 </IfModule>

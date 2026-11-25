@@ -4,41 +4,16 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use App\Repository\JsonFileRecipeRepository;
 use App\Repository\RepositoryFactory;
-use App\Repository\SqliteRecipeRepository;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 final class RepositoryFactoryTest extends TestCase
 {
-    private string $dir;
-
-    protected function setUp(): void
+    public function testUsesTheConfiguredDriver(): void
     {
-        $this->dir = sys_get_temp_dir() . '/recipes-factory-test-' . bin2hex(random_bytes(4));
-    }
-
-    protected function tearDown(): void
-    {
-        array_map('unlink', glob($this->dir . '/*') ?: []);
-        @rmdir($this->dir);
-    }
-
-    public function testCreatesTheConfiguredBackend(): void
-    {
-        self::assertInstanceOf(JsonFileRecipeRepository::class, $this->factory('json')->create());
-        self::assertInstanceOf(SqliteRecipeRepository::class, $this->factory('sqlite')->create());
-        self::assertInstanceOf(SqliteRecipeRepository::class, $this->factory('json')->create('sqlite'));
-    }
-
-    public function testExistsOnlyAfterStorageWasCreated(): void
-    {
-        $factory = $this->factory('sqlite');
-        self::assertFalse($factory->exists());
-        $factory->create();
-        self::assertTrue($factory->exists());
-        self::assertFalse($factory->exists('json'));
+        self::assertSame('json', $this->factory('json')->driver());
+        self::assertSame('sqlite', $this->factory('sqlite')->driver());
     }
 
     public function testRejectsUnknownStorage(): void
@@ -47,12 +22,30 @@ final class RepositoryFactoryTest extends TestCase
         $this->factory('mysql')->create();
     }
 
+    public function testPutsOnlyTheBasenameIntoTheStateDirectory(): void
+    {
+        $factory = new RepositoryFactory([
+            'storage' => 'json',
+            'json_file' => '/somewhere/else/custom-recipes.json',
+            'sqlite_file' => 'databases/custom-recipes.sqlite',
+        ]);
+
+        self::assertSame(STATEDIR . '/custom-recipes.json', $factory->file('json'));
+        self::assertSame(STATEDIR . '/custom-recipes.sqlite', $factory->file('sqlite'));
+    }
+
+    public function testUsesTheGlobalStateDirectory(): void
+    {
+        self::assertSame(STATEDIR . '/recipes.json', $this->factory('json')->file('json'));
+        self::assertSame(STATEDIR . '/recipes.sqlite', $this->factory('sqlite')->file('sqlite'));
+    }
+
     private function factory(string $storage): RepositoryFactory
     {
         return new RepositoryFactory([
             'storage' => $storage,
-            'json_file' => $this->dir . '/recipes.json',
-            'sqlite_file' => $this->dir . '/recipes.sqlite',
+            'json_file' => 'recipes.json',
+            'sqlite_file' => 'recipes.sqlite',
         ]);
     }
 }

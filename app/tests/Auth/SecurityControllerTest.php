@@ -25,7 +25,7 @@ final class SecurityControllerTest extends AuthTestCase
             'defaults_dir' => $this->dir . '/defaults',
             'state_dir' => $this->dir . '/state',
             'password_cost' => 4,
-        ], dirname(__DIR__, 2)));
+        ]));
     }
 
     public function testAuthorizationCanBeSwitchedOff(): void
@@ -162,7 +162,7 @@ final class SecurityControllerTest extends AuthTestCase
             'defaults_dir' => dirname(__DIR__, 2) . '/defaults',
             'state_dir' => $this->dir . '/state',
             'password_cost' => 4,
-        ], dirname(__DIR__, 2)));
+        ]));
 
         self::assertTrue($security->usesDefaultPassword('admin'));
         $security->changePassword('admin', 'a-better-password');
@@ -172,7 +172,7 @@ final class SecurityControllerTest extends AuthTestCase
 
     public function testProvidersAreChosenFromARegistryOnly(): void
     {
-        $config = fn (array $extra): array => AuthFactory::normalize($extra + ['state_dir' => $this->dir . '/state', 'defaults_dir' => $this->dir . '/defaults'], dirname(__DIR__, 2));
+        $config = fn (array $extra): array => AuthFactory::normalize($extra + ['state_dir' => $this->dir . '/state', 'defaults_dir' => $this->dir . '/defaults']);
 
         try {
             AuthFactory::create($config(['authenticator' => '../../etc/passwd']));

@@ -158,17 +158,18 @@ final class UrlImportTest extends TestCase
 
     private function app(?RecipeExtractor $extractor, array $llm = ['endpoint' => '']): Application
     {
+        $config = [
+            'auth_enabled' => false,
+            'auth_state_dir' => $this->dir . '/auth',
+            'auth_defaults_dir' => dirname(__DIR__) . '/defaults',
+        ];
+        foreach ($llm as $key => $value) {
+            $config['llm_' . $key] = $value;
+        }
+
         return new Application(
-            dirname(__DIR__),
             $this->recipes,
-            config: [
-                'auth' => [
-                    'enabled' => false,
-                    'state_dir' => $this->dir . '/auth',
-                    'defaults_dir' => dirname(__DIR__) . '/defaults',
-                ],
-                'llm' => $llm,
-            ],
+            config: $config,
             recipeExtractor: $extractor,
         );
     }

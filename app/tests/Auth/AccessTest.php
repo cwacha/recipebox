@@ -23,7 +23,7 @@ final class AccessTest extends AuthWebTestCase
     {
         $security = \App\Auth\AuthFactory::create(\App\Auth\AuthFactory::normalize([
             'defaults_dir' => $this->dir . '/defaults', 'state_dir' => $this->dir . '/state', 'password_cost' => 4,
-        ], dirname(__DIR__, 2)));
+        ]));
         $security->saveRole('nolist', ['/account/password']);
         $security->saveAccount('nolist', ['password' => 'nolist-password'], ['nolist']);
 
@@ -193,6 +193,6 @@ final class AccessTest extends AuthWebTestCase
     {
         return \App\Auth\AuthFactory::create(\App\Auth\AuthFactory::normalize([
             'defaults_dir' => $this->dir . '/defaults', 'state_dir' => $this->dir . '/state', 'password_cost' => 4,
-        ], dirname(__DIR__, 2)));
+        ]));
     }
 }

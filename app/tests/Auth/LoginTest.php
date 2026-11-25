@@ -163,11 +163,11 @@ final class LoginTest extends AuthWebTestCase
 
     public function testDefaultAdministratorPasswordIsFlaggedAndForcesAChangePrompt(): void
     {
-        $app = new \App\Application(dirname(__DIR__, 2), $this->recipes, config: ['auth' => [
-            'defaults_dir' => dirname(__DIR__, 2) . '/defaults',
-            'state_dir' => $this->dir . '/state-default',
-            'password_cost' => 4,
-        ]]);
+        $app = new \App\Application($this->recipes, config: [
+            'auth_defaults_dir' => dirname(__DIR__, 2) . '/defaults',
+            'auth_state_dir' => $this->dir . '/state-default',
+            'auth_password_cost' => 4,
+        ]);
         $browser = $this->browser(app: $app);
 
         $response = $browser->login('admin', 'admin');

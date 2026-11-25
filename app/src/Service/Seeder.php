@@ -16,8 +16,8 @@ use RuntimeException;
 final class Seeder
 {
     public function __construct(
-        private readonly string $defaultsDir,
-        private readonly string $publicDir,
+        private readonly string $defaultsDir = BASEDIR . '/defaults/seed',
+        private readonly string $publicDir = BASEDIR . '/public',
     ) {
     }
 
