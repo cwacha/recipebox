@@ -14,6 +14,7 @@
  * @var \Closure  $can        can('/admin') tells whether the current account may use that view or action
  * @var \Closure  $csrf
  * @var \Closure  $flash      pending messages for this visitor (can only be read once)
+ * @var \Closure  $asset      asset('/assets/js/app.js') adds a version so browsers pick up changed files
  */
 ?>
 <!doctype html>
@@ -30,7 +31,7 @@
     <link href="<?= $e($url('/assets/vendor/bootstrap/css/bootstrap.min.css')) ?>" rel="stylesheet">
     <link href="<?= $e($url('/assets/vendor/bootstrap-icons/bootstrap-icons.min.css')) ?>" rel="stylesheet">
     <link href="<?= $e($url('/assets/vendor/fonts/fonts.css')) ?>" rel="stylesheet">
-    <link href="<?= $e($url('/assets/css/app.css')) ?>" rel="stylesheet">
+    <link href="<?= $e($url($asset('/assets/css/app.css'))) ?>" rel="stylesheet">
     <script>
         (function () {
             var t = localStorage.getItem('theme');
@@ -53,7 +54,7 @@
                         <a class="btn btn-primary<?= $active === 'new' ? ' active' : '' ?>" href="<?= $e($url('/recipes/new')) ?>"><i class="bi bi-plus-lg"></i> New recipe</a>
                     <?php endif; ?>
                     <?php if ($can('/import')): ?>
-                        <a class="btn btn-outline-secondary<?= $active === 'import' ? ' active' : '' ?>" href="<?= $e($url('/import')) ?>"><i class="bi bi-upload"></i> Import JSON</a>
+                        <a class="btn btn-outline-secondary<?= $active === 'import' ? ' active' : '' ?>" href="<?= $e($url('/import')) ?>"><i class="bi bi-upload"></i> Import</a>
                     <?php endif; ?>
                     <?php if ($can('recipe_export_all')): ?>
                         <a class="btn btn-outline-secondary" href="<?= $e($url('/api/recipes/export')) ?>"><i class="bi bi-download"></i> Export all</a>
@@ -95,9 +96,9 @@
 
     <script src="<?= $e($url('/assets/vendor/jquery/jquery.min.js')) ?>"></script>
     <script src="<?= $e($url('/assets/vendor/bootstrap/js/bootstrap.bundle.min.js')) ?>"></script>
-    <script src="<?= $e($url('/assets/js/app.js')) ?>"></script>
+    <script src="<?= $e($url($asset('/assets/js/app.js'))) ?>"></script>
     <?php foreach ($scripts as $script): ?>
-        <script src="<?= $e($url('/assets/js/' . $script)) ?>"></script>
+        <script src="<?= $e($url($asset('/assets/js/' . $script))) ?>"></script>
     <?php endforeach; ?>
 </body>
 </html>

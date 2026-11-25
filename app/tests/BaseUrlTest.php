@@ -62,7 +62,7 @@ final class BaseUrlTest extends TestCase
     {
         $body = $this->app(['base_url' => self::PREFIX])->handle(new Request('GET', '/', ''))->body();
 
-        self::assertStringContainsString('href="' . self::PREFIX . '/assets/css/app.css"', $body);
+        self::assertStringContainsString('href="' . self::PREFIX . '/assets/css/app.css', $body);
         self::assertStringContainsString('href="' . self::PREFIX . '/' . '"', $body);
         self::assertStringContainsString('href="' . self::PREFIX . '/recipes/' . $this->slug . '"', $body);
         self::assertStringContainsString('href="' . self::PREFIX . '/recipes/new"', $body);

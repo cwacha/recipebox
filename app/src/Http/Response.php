@@ -48,6 +48,13 @@ class Response
 
     public function send(): void
     {
+        $this->sendHeaders();
+        echo $this->body;
+    }
+
+    /** Sends the status line, the headers and the cookies; streaming responses use this before writing. */
+    protected function sendHeaders(): void
+    {
         http_response_code($this->status);
         foreach ($this->headers as $name => $value) {
             header("$name: $value");
@@ -61,6 +68,5 @@ class Response
                 'samesite' => $cookie->sameSite,
             ]);
         }
-        echo $this->body;
     }
 }

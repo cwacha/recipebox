@@ -242,6 +242,14 @@ h1, h2.display, .brand, .recipe-title, .card-title-serif {
     margin: 0 .25rem .25rem 0;
 }
 
+/* Tags under the recipe preview: the same weight as the meta pills above them */
+.preview-tags .tag {
+    font-size: .82rem;
+    font-weight: 600;
+    padding: .28rem .7rem;
+    margin: 0;
+}
+
 [data-bs-theme="dark"] .tag {
     color: #ffb48f;
 }
@@ -465,6 +473,77 @@ mark {
     font-size: .8rem;
     max-height: 260px;
     overflow: auto;
+}
+
+/* Import page: progress of the URL import */
+.import-progress {
+    margin-top: 1rem;
+    padding: .9rem 1rem;
+    border-radius: .75rem;
+    background: var(--bs-tertiary-bg);
+}
+
+.import-status {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    font-size: .9rem;
+    font-weight: 600;
+}
+
+.import-status .bi-check-circle-fill { color: var(--bs-success); }
+.import-status .bi-x-circle-fill { color: var(--bs-danger); }
+.import-status .bi-dash-circle { color: var(--bs-secondary-color); }
+
+.import-timer {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    font-size: .9rem;
+}
+
+.import-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.import-steps li {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .18rem 0;
+    font-size: .9rem;
+    color: var(--bs-secondary-color);
+    transition: color .15s;
+}
+
+.import-steps li i {
+    width: 1rem;
+    text-align: center;
+}
+
+.import-steps li.running {
+    color: var(--bs-body-color);
+    font-weight: 600;
+}
+
+.import-steps li.running i {
+    animation: spin 1.1s linear infinite;
+}
+
+.import-steps li.done i { color: var(--bs-success); }
+.import-steps li.failed { color: var(--bs-danger); font-weight: 600; }
+.import-steps li.cancelled { color: var(--bs-secondary-color); font-weight: 600; }
+
+.import-steps .step-time {
+    margin-left: auto;
+    font-size: .8rem;
+    color: var(--bs-secondary-color);
+    font-variant-numeric: tabular-nums;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 .modal-content {

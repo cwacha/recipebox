@@ -16,7 +16,7 @@ Open <http://localhost:8000> and sign in with **`admin` / `admin`**. You are tak
 **change this default password before the application is reachable by anybody else.** Run the tests with `composer test`.
 
 Requirements: PHP 8.2+ with `json`, `fileinfo` and `curl` (plus `pdo_sqlite` for SQLite storage, `intl` is used for slugs when present), Composer. Bootstrap, Bootstrap Icons, jQuery and the web fonts
-load from CDNs, so the browser needs internet access.
+are bundled under `public/assets/vendor/`, so the browser needs no internet access.
 
 On Apache, point the document root at `public/` (`.htaccess` is included) and allow `.htaccess` overrides
 (`AllowOverride FileInfo AuthConfig Options`). Under nginx, route unknown paths to `public/index.php`.
@@ -78,7 +78,7 @@ The REST-style `PUT` and `DELETE` routes remain for API clients that can send th
 | `/recipes/{name}` | recipe: ingredients, cooking time, numbered steps, e.g. `/recipes/spaghetti-carbonara` |
 | `/recipes/{name}/edit` | edit a recipe |
 | `/recipes/new` | create a recipe |
-| `/import` | import recipes from JSON |
+| `/import` | import recipes from JSON or from a web page (AI) |
 | `/login`, `/logout` | sign in and out |
 | `/account/password` | change the own password |
 | `/admin` | administration overview |
@@ -178,8 +178,54 @@ register your own with `'authenticators' => ['ldap' => fn (array $auth) => new L
 - Every recipe shows ingredients for **4 people**, the cooking time and numbered steps; tap ingredients and steps to tick them off while cooking
 - Create / edit recipes in a form, with picture upload or image URL (downloaded and saved with the recipe), reorderable steps
 - **Import JSON** (file, drag & drop or paste) – a single recipe, a list, or `{"recipes": [...]}`; all-or-nothing validation. Pictures that are links to other servers are downloaded into `public/images/`, so imported recipes are self-contained (see below)
+- **Import from a URL (AI)** – paste a recipe page; a configurable OpenAI-compatible LLM extracts it and shows a preview, with the running steps and a timer, and nothing is saved until you confirm it
 - Export one recipe or all recipes as JSON (same format the import accepts)
 - Print view, dark mode, responsive layout
+
+### Import from a URL (AI)
+
+The import page can ask an external LLM to read a recipe from a web page. Set the endpoint in `config/app.php` to
+enable it (an empty endpoint hides the feature entirely):
+
+```php
+'llm' => [
+    'endpoint' => 'https://api.openai.com/v1/chat/completions',
+    'api_key' => 'sk-…',
+    'model' => 'gpt-4o-mini',
+    'prompt' => '…',       // {html} is where the page HTML goes; without it the HTML is appended
+    'timeout' => 60,
+],
+```
+
+| Setting | Environment | Meaning |
+|---|---|---|
+| `endpoint` | `RECIPES_LLM_ENDPOINT` | OpenAI-compatible chat completions URL. Empty = feature disabled. |
+| `api_key` | `RECIPES_LLM_API_KEY` | Sent as `Authorization: Bearer …`; may be empty for local services. It never reaches the browser. |
+| `model` | `RECIPES_LLM_MODEL` | Model name, default `gpt-4o-mini`. |
+| `prompt` | `RECIPES_LLM_PROMPT` | Instruction for the model. `{html}` is replaced with the page source, `{url}` with the address; a prompt without `{html}` gets the HTML appended. |
+| `timeout` | `RECIPES_LLM_TIMEOUT` | Request timeout in seconds, default 60. |
+
+The application downloads the page itself and sends its HTML inside the prompt, so any chat-completions model can be
+used — the model does not have to be able to open URLs. The download follows the same safety rules as image import
+(http(s) only on ports 80/443, no credentials in the URL, no private/loopback addresses unless
+`import_allow_private_hosts` is enabled, at most 4 MB, redirects followed manually).
+
+The endpoint answers with one recipe as JSON. The answer is validated with the same rules as a JSON import, then shown
+as a preview. **Nothing is stored during the preview:** after confirming, the browser sends the preview to
+`POST /api/recipes/import`, so pictures are downloaded and saved exactly like a normal import. Discarding simply hides
+the preview. The feature needs the `recipe_import` permission.
+
+The import page requests the extraction with `?stream=1`: the server sends one NDJSON event per step as soon as it
+starts (`check`, `download`, `ask`, `parse`), so the page shows which step is running, how long each step took, and a
+timer with the total time. While the import runs, the button turns into **Cancel**: cancelling closes the connection,
+and the server notices it (a `ping` event is written while the model works) and aborts the request to the model.
+
+The API key stays on the server, and redirects from the LLM endpoint are not followed so the key cannot be forwarded
+to another host.
+
+The LLM call can take tens of seconds. The application raises PHP's execution limit for that request to the configured
+`timeout` (plus a margin), so the built-in server and normal PHP setups do not abort it after 30 seconds. If the
+application sits behind a proxy, its timeout (e.g. nginx `fastcgi_read_timeout`) must be longer than `timeout` as well.
 
 ### Image import
 
@@ -254,7 +300,7 @@ src/
                    RepositoryFactory (picks the backend from config/app.php)
   View/            View (renders templates inside the layout, escaping helpers)
   Validation/      RecipeValidator
-  Service/         ImageStorage, ImageLocalizer + CurlImageFetcher (image import), SlugGenerator, Seeder
+  Service/         ImageStorage, ImageLocalizer, RemoteFetcher + CurlImageFetcher / CurlPageFetcher (downloads), LlmRecipeExtractor + CurlLlmClient (URL import), SlugGenerator, Seeder
 templates/         layout, home, recipe, form, import, error
 tests/             PHPUnit
 ```
@@ -303,5 +349,6 @@ Use HTTP Basic, or a session with the `X-CSRF-Token` header.
 | POST | `/api/recipes` | create |
 | GET / PUT / DELETE | `/api/recipes/{id}` | read / update / delete (the API uses the internal id) |
 | POST | `/api/recipes/import` | bulk import; response includes `warnings` |
+| POST | `/api/recipes/import/url` | LLM preview for `{"url": "https://…"}`; nothing is saved. With `?stream=1` the steps (`check`, `download`, `ask`, `parse`) and the result are sent as NDJSON events while the work runs |
 | GET | `/api/recipes/export`, `/api/recipes/{id}/export` | JSON download |
 | POST | `/api/uploads` | multipart image upload (`image`) → `{"path": "uploads/…"}` |

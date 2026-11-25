@@ -70,6 +70,7 @@ final class AccessTest extends AuthWebTestCase
             ['PUT', '/api/recipes/' . $this->recipeId, $this->recipePayload()],
             ['DELETE', '/api/recipes/' . $this->recipeId, null],
             ['POST', '/api/recipes/import', [$this->recipePayload()]],
+            ['POST', '/api/recipes/import/url', ['url' => 'https://example.com/recipe']],
         ] as [$method, $path, $body]) {
             $response = $reader->json($method, $path, $body);
             self::assertSame(403, $response->status(), "$method $path");
@@ -87,22 +88,16 @@ final class AccessTest extends AuthWebTestCase
     public function testExportsNeedTheirOwnPermission(): void
     {
         $reader = $this->loggedIn('rd', 'readerpass1');
-        self::assertSame(200, $reader->json('GET', '/api/recipes/' . $this->recipeId . '/export')->status(), 'readers may export a single recipe');
-        self::assertSame(403, $reader->json('GET', '/api/recipes/export')->status(), 'bulk export is not implied by reading');
-        $recipePage = $reader->get('/recipes/' . $this->recipeSlug)->body();
-        self::assertStringContainsString('filetype-json', $recipePage, 'the single export button is shown');
-        self::assertStringNotContainsString('Export all', $reader->get('/')->body(), 'the bulk export button is hidden');
+        self::assertSame(403, $reader->json('GET', '/api/recipes/' . $this->recipeId . '/export')->status());
+        self::assertSame(403, $reader->json('GET', '/api/recipes/export')->status());
+        self::assertStringNotContainsString('filetype-json', $reader->get('/recipes/' . $this->recipeSlug)->body());
+        self::assertStringNotContainsString('Export all', $reader->get('/')->body());
 
-        // a role that may read recipes but has neither export permission
-        $security = $this->security();
-        $security->saveRole('viewer', ['show', '/', '/recipes']);
-        $security->saveAccount('viewer', ['password' => 'viewer-password'], ['viewer']);
-
-        $viewer = $this->browser(app: $this->app());
-        self::assertSame(303, $viewer->login('viewer', 'viewer-password')->status());
-        self::assertSame(403, $viewer->json('GET', '/api/recipes/' . $this->recipeId . '/export')->status());
-        self::assertSame(403, $viewer->json('GET', '/api/recipes/export')->status());
-        self::assertStringNotContainsString('filetype-json', $viewer->get('/recipes/' . $this->recipeSlug)->body());
+        $editor = $this->loggedIn('ed', 'editorpass1');
+        self::assertSame(200, $editor->json('GET', '/api/recipes/' . $this->recipeId . '/export')->status());
+        self::assertSame(200, $editor->json('GET', '/api/recipes/export')->status());
+        self::assertStringContainsString('filetype-json', $editor->get('/recipes/' . $this->recipeSlug)->body());
+        self::assertStringContainsString('Export all', $editor->get('/')->body());
     }
 
     public function testChangesNeedAValidCsrfToken(): void

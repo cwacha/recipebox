@@ -27,9 +27,14 @@ use App\Http\Session;
 use App\Repository\RecipeRepositoryInterface;
 use App\Repository\RepositoryFactory;
 use App\Service\CurlImageFetcher;
+use App\Service\CurlLlmClient;
+use App\Service\CurlPageFetcher;
 use App\Service\ImageFetcher;
 use App\Service\ImageLocalizer;
 use App\Service\ImageStorage;
+use App\Service\LlmRecipeExtractor;
+use App\Service\PageFetcher;
+use App\Service\RecipeExtractor;
 use App\Service\Seeder;
 use App\Validation\RecipeValidator;
 use App\View\View;
@@ -56,6 +61,8 @@ final class Application
         private readonly bool $debug = false,
         private readonly ?ImageFetcher $fetcher = null,
         array $config = [],
+        private readonly ?RecipeExtractor $recipeExtractor = null,
+        private readonly ?PageFetcher $pageFetcher = null,
     ) {
         $config = array_replace_recursive(require $rootDir . '/config/app.php', $config);
         $config['base_dir'] = rtrim((string) ($config['base_dir'] ?? $rootDir), '/');
@@ -196,8 +203,15 @@ final class Application
     {
         $security = $this->security;
         $csrf = $this->csrf;
+        $publicDir = $this->rootDir . '/public';
 
         return [
+            // Browsers cache scripts and styles without asking the server; a changed file needs a new URL.
+            'asset' => static function (string $path) use ($publicDir): string {
+                $stamp = is_file($publicDir . $path) ? filemtime($publicDir . $path) : false;
+
+                return $stamp === false ? $path : $path . '?v=' . $stamp;
+            },
             'version' => $this->version,
             'authEnabled' => $security->isEnabled(),
             'user' => $identity->accountId !== null && !$identity->isGuest() ? $security->getPublicAccount($identity->accountId) : null,
@@ -243,10 +257,32 @@ final class Application
             $this->rootDir . '/public',
         );
         $templates = $this->rootDir . '/templates';
+        $validator = new RecipeValidator();
 
-        $recipes = new RecipeController($repository, new RecipeValidator(), $images, $localizer);
+        $extractor = $this->recipeExtractor;
+        if ($extractor === null) {
+            $llm = (array) ($this->config['llm'] ?? []);
+            $endpoint = trim((string) ($llm['endpoint'] ?? ''));
+            if ($endpoint !== '') {
+                $extractor = new LlmRecipeExtractor(
+                    new CurlLlmClient(
+                        $endpoint,
+                        (string) ($llm['api_key'] ?? ''),
+                        (string) ($llm['model'] ?? 'gpt-4o-mini'),
+                        (int) ($llm['timeout'] ?? 60),
+                    ),
+                    $this->pageFetcher ?? new CurlPageFetcher(
+                        allowPrivateHosts: (bool) ($this->config['import_allow_private_hosts'] ?? false),
+                    ),
+                    $validator,
+                    (string) ($llm['prompt'] ?? ''),
+                );
+            }
+        }
+
+        $recipes = new RecipeController($repository, $validator, $images, $localizer, $extractor);
         $uploads = new UploadController($images);
-        $pages = new PageController($repository, $templates);
+        $pages = new PageController($repository, $templates, $extractor !== null);
         $auth = new AuthController($this->security, $this->webAuth, $templates, (string) ($this->config['auth']['guest_account'] ?? '') !== '');
         $admin = new AdminController($this->security, $this->webAuth, $templates);
 
@@ -278,6 +314,7 @@ final class Application
             ->add('GET', '/api/recipes', $recipes->index(...), 'show')
             ->add('POST', '/api/recipes', $recipes->store(...), 'recipe_create')
             ->add('POST', '/api/recipes/import', $recipes->import(...), 'recipe_import')
+            ->add('POST', '/api/recipes/import/url', $recipes->importUrl(...), 'recipe_import')
             // The web interface uses POST for everything, because many Apache setups only allow GET and POST.
             // PUT and DELETE remain for API clients that can send them.
             ->add('POST', '/api/recipes/{id}/delete', $recipes->destroy(...), 'recipe_delete')

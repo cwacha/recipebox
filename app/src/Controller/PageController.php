@@ -17,6 +17,7 @@ final class PageController extends AbstractController
     public function __construct(
         private readonly RecipeRepositoryInterface $recipes,
         private readonly string $templateDir,
+        private readonly bool $llmImportEnabled = false,
     ) {
     }
 
@@ -66,6 +67,7 @@ final class PageController extends AbstractController
     public function import(Request $request): Response
     {
         return $this->html($this->view($request)->page('import', [
+            'llmImportEnabled' => $this->llmImportEnabled,
             'example' => [
                 'title' => 'Tomato Bruschetta',
                 'description' => 'Crisp toasted bread with marinated tomatoes.',

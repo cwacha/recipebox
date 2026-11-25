@@ -68,6 +68,7 @@ final class View
         ];
 
         $defaults = [
+            'asset' => static fn (string $path): string => $path,
             'version' => '',
             'authEnabled' => false,
             'user' => null,

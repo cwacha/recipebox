@@ -9,12 +9,16 @@ use App\Exception\NotFoundException;
 use App\Exception\ValidationException;
 use App\Http\Request;
 use App\Http\Response;
+use App\Http\StreamedJsonResponse;
 use App\Model\Recipe;
 use App\Repository\RecipeRepositoryInterface;
 use App\Service\ImageFetchException;
 use App\Service\ImageLocalizer;
 use App\Service\ImageStorage;
+use App\Service\RecipeExtractor;
+use App\Service\RecipeImportException;
 use App\Validation\RecipeValidator;
+use Closure;
 
 final class RecipeController extends AbstractController
 {
@@ -23,6 +27,7 @@ final class RecipeController extends AbstractController
         private readonly RecipeValidator $validator,
         private readonly ImageStorage $images,
         private readonly ImageLocalizer $localizer,
+        private readonly ?RecipeExtractor $extractor = null,
     ) {
     }
 
@@ -172,6 +177,77 @@ final class RecipeController extends AbstractController
         }
 
         return $this->json(['imported' => count($recipes), 'recipes' => $recipes, 'warnings' => $warnings], 201);
+    }
+
+    /**
+     * Asks the configured LLM to turn a web page into recipe data. The result is only a preview; the browser
+     * sends it to import() after the user confirms it. With ?stream=1 the steps are reported as NDJSON events
+     * while the work is done, which is what the import page uses.
+     */
+    public function importUrl(Request $request): Response
+    {
+        $value = $request->json()['url'] ?? '';
+        $url = is_scalar($value) ? trim((string) $value) : '';
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        if ($url === '' || mb_strlen($url) > 2000
+            || filter_var($url, FILTER_VALIDATE_URL) === false
+            || !in_array($scheme, ['http', 'https'], true)
+            || preg_match('/[\x00-\x20]/', $url) === 1
+        ) {
+            throw new ValidationException(['url' => 'Enter a valid http(s) recipe URL.']);
+        }
+
+        $extractor = $this->extractor;
+        if ($extractor === null) {
+            throw new HttpException(503, 'Importing a recipe from a URL is not configured.');
+        }
+
+        if ($request->query('stream') === '1') {
+            return new StreamedJsonResponse(function (Closure $emit) use ($extractor, $url): void {
+                $this->streamExtraction($extractor, $url, $emit);
+            });
+        }
+
+        try {
+            $recipe = $extractor->extract($url);
+        } catch (RecipeImportException $e) {
+            throw new HttpException(502, 'The recipe could not be read from that URL: ' . $e->getMessage());
+        }
+
+        return $this->json(['recipe' => $recipe, 'url' => $url]);
+    }
+
+    /**
+     * Reports every step of the extraction as an event. Errors become events as well, because the HTTP headers
+     * have already been sent by the time the work starts.
+     *
+     * @param Closure(array<string, mixed>): void $emit
+     */
+    private function streamExtraction(RecipeExtractor $extractor, string $url, Closure $emit): void
+    {
+        $emit(['event' => 'step', 'step' => 'check']);
+
+        // The browser closes this connection when the import is cancelled. A heartbeat while the model works makes
+        // PHP notice that, and the request to the model is aborted instead of running to its end unseen.
+        $cancelled = static function () use ($emit): bool {
+            $emit(['event' => 'ping']);
+
+            return connection_aborted() === 1;
+        };
+
+        try {
+            $recipe = $extractor->extract($url, static function (string $step) use ($emit): void {
+                $emit(['event' => 'step', 'step' => $step]);
+            }, $cancelled);
+            $emit(['event' => 'done', 'recipe' => $recipe, 'url' => $url]);
+        } catch (RecipeImportException $e) {
+            $emit(['event' => 'error', 'message' => 'The recipe could not be read from that URL: ' . $e->getMessage()]);
+        } catch (ValidationException $e) {
+            $emit(['event' => 'error', 'message' => 'The model did not answer with a complete recipe.', 'errors' => $e->errors]);
+        } catch (\Throwable $e) {
+            error_log((string) $e);
+            $emit(['event' => 'error', 'message' => 'Internal server error.']);
+        }
     }
 
     public function export(Request $request, string $id): Response

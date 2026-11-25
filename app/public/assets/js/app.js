@@ -27,7 +27,7 @@ window.Recipes = (function ($) {
             return Object.keys(json.errors).map(function (k) { return json.errors[k]; });
         }
         if (json && json.error) return [json.error];
-        return [xhr.status ? 'Request failed (' + xhr.status + ').' : 'Server not reachable.'];
+        return [xhr.status ? 'Request failed (' + xhr.status + ').' : 'No answer from the server. It may still be busy – please try again.'];
     }
 
     function toast(message, type) {
