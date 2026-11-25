@@ -39,4 +39,24 @@ final class ConfigTest extends TestCase
         self::assertSame([], array_filter($local, 'is_array'), 'local config must not contain nested arrays');
         self::assertSame([], array_diff_key($local, $defaults), 'local config may only override known settings');
     }
+
+    public function testEnvironmentVariablesStillOverrideTheConfigurationAndCallerOverridesWin(): void
+    {
+        $storage = getenv('RECIPES_STORAGE');
+        $auth = getenv('RECIPES_AUTH');
+
+        putenv('RECIPES_STORAGE=sqlite');
+        putenv('RECIPES_AUTH=0');
+
+        try {
+            $config = Config::load();
+            self::assertSame('sqlite', $config['storage']);
+            self::assertFalse($config['auth_enabled']);
+
+            self::assertSame('json', Config::load(['storage' => 'json'])['storage'], 'caller overrides are applied last');
+        } finally {
+            putenv($storage === false ? 'RECIPES_STORAGE' : 'RECIPES_STORAGE=' . $storage);
+            putenv($auth === false ? 'RECIPES_AUTH' : 'RECIPES_AUTH=' . $auth);
+        }
+    }
 }

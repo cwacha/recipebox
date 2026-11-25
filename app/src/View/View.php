@@ -67,7 +67,7 @@ final class View
             },
         ];
 
-        $defaults = [
+        $sharedDefaults = [
             'asset' => static fn (string $path): string => $path,
             'version' => '',
             'authEnabled' => false,
@@ -80,7 +80,7 @@ final class View
 
         extract($helpers);
         extract($vars, EXTR_SKIP);
-        extract($this->shared + $defaults, EXTR_SKIP);
+        extract($this->shared + $sharedDefaults, EXTR_SKIP);
 
         ob_start();
         try {

@@ -11,6 +11,7 @@ use App\Auth\JsonFile;
 use App\Auth\LoginThrottle;
 use App\Auth\SecurityController;
 use App\Auth\WebAuth;
+use App\Config\ConfigStore;
 use App\Controller\AdminController;
 use App\Controller\AuthController;
 use App\Controller\PageController;
@@ -62,6 +63,7 @@ final class Application
         private readonly ?RecipeExtractor $recipeExtractor = null,
         private readonly ?PageFetcher $pageFetcher = null,
         private readonly ?ImageStorage $images = null,
+        private readonly ?ConfigStore $configStore = null,
     ) {
         $config = Config::load($config);
         $config['base_url'] = ($config['base_url'] ?? null) === null ? null : Request::normalizeBaseUrl((string) $config['base_url']);
@@ -281,7 +283,12 @@ final class Application
         $uploads = new UploadController($images);
         $pages = new PageController($repository, $templates, $extractor !== null);
         $auth = new AuthController($this->security, $this->webAuth, $templates, (string) ($this->config['auth']['guest_account'] ?? '') !== '');
-        $admin = new AdminController($this->security, $this->webAuth, $templates);
+        $admin = new AdminController(
+            $this->security,
+            $this->webAuth,
+            $templates,
+            $this->configStore ?? new ConfigStore(BASEDIR . '/defaults/config.php', CONFDIR . '/config.php'),
+        );
 
         // The last argument is what the account needs for the route: a view (starts with "/") or an action.
         // null means the route is public. "show" is something every identified account may do.
@@ -308,6 +315,8 @@ final class Application
             ->add('GET', '/admin/role/edit', $admin->roleEdit(...), '/admin/role/edit')
             ->add('POST', '/admin/role/edit', $admin->roleSave(...), 'role_edit')
             ->add('POST', '/admin/role/delete', $admin->roleDelete(...), 'role_delete')
+            ->add('GET', '/admin/config', $admin->config(...), '/admin/config')
+            ->add('POST', '/admin/config', $admin->configSave(...), 'config_edit')
             ->add('GET', '/api/recipes', $recipes->index(...), 'show')
             ->add('POST', '/api/recipes', $recipes->store(...), 'recipe_create')
             ->add('POST', '/api/recipes/import', $recipes->import(...), 'recipe_import')

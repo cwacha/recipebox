@@ -3,12 +3,13 @@
  * @var \Closure $e
  * @var \Closure $url
  * @var \Closure $can
- * @var string   $section overview|accounts|roles
+ * @var string   $section overview|accounts|roles|config
  */
 $tabs = [
     'overview' => ['/admin', '/admin', 'Overview', 'bi-speedometer2'],
     'accounts' => ['/admin/accounts', '/admin/accounts', 'Accounts', 'bi-people'],
     'roles' => ['/admin/roles', '/admin/roles', 'Roles & permissions', 'bi-diagram-3'],
+    'config' => ['/admin/config', '/admin/config', 'Configuration', 'bi-sliders'],
 ];
 ?>
 <ul class="nav nav-tabs admin-tabs mb-4 no-print">

@@ -10,18 +10,23 @@ use App\Auth\Exception\ValidationFailed;
 use App\Auth\Identity;
 use App\Auth\SecurityController;
 use App\Auth\WebAuth;
+use App\Config\ConfigForm;
+use App\Config\ConfigSchema;
+use App\Config\ConfigStore;
 use App\Exception\NotFoundException;
 use App\Http\Request;
 use App\Http\Response;
 use App\View\View;
+use RuntimeException;
 
-/** Management of accounts, roles and the mapping between them. */
+/** Management of accounts, roles, the mapping between them, and the application configuration. */
 final class AdminController extends AbstractController
 {
     public function __construct(
         private readonly SecurityController $security,
         private readonly WebAuth $webAuth,
         private readonly string $templateDir,
+        private readonly ConfigStore $configStore,
     ) {
     }
 
@@ -267,6 +272,36 @@ final class AdminController extends AbstractController
         return $this->redirect($request->basePath . '/admin/roles', 303);
     }
 
+    /* ---------- configuration ---------- */
+
+    public function config(Request $request): Response
+    {
+        $defaults = $this->configStore->defaults();
+
+        return $this->configPage($request, $this->configStore->current(), $defaults, []);
+    }
+
+    public function configSave(Request $request): Response
+    {
+        $defaults = $this->configStore->defaults();
+        $current = $this->configStore->current();
+        $posted = $request->post['config'] ?? [];
+        $result = (new ConfigForm())->parse($defaults, $current, is_array($posted) ? $posted : []);
+
+        if ($result['errors'] === []) {
+            try {
+                $this->configStore->save($result['values']);
+                $request->session()->flash('success', 'The configuration has been saved. Only the differences from the defaults were written.');
+
+                return $this->redirect($request->basePath . '/admin/config', 303);
+            } catch (RuntimeException $e) {
+                $result['errors']['form'] = 'The configuration could not be saved: ' . $e->getMessage();
+            }
+        }
+
+        return $this->configPage($request, $result['values'], $defaults, $result['errors'], 422);
+    }
+
     /* ---------- helpers ---------- */
 
     /**
@@ -312,6 +347,21 @@ final class AdminController extends AbstractController
             'members' => $form['isNew'] ? [] : $this->security->accountsWithRole($form['id']),
             'isProtected' => $form['id'] === AuthorizerDefault::ALL_ROLE,
         ], $form['isNew'] ? 'New role' : 'Role ' . $form['id'], $status);
+    }
+
+    /**
+     * @param array<string, mixed>  $values
+     * @param array<string, mixed>  $defaults
+     * @param array<string, string> $errors
+     */
+    private function configPage(Request $request, array $values, array $defaults, array $errors, int $status = 200): Response
+    {
+        return $this->page($request, 'admin/config', [
+            'values' => $values,
+            'defaults' => $defaults,
+            'errors' => $errors,
+            'groups' => ConfigSchema::groups(array_keys($defaults)),
+        ], 'Configuration', $status);
     }
 
     /** @param array<string, mixed> $vars */

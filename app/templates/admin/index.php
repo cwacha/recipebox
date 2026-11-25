@@ -58,6 +58,9 @@ $tiles = [
         <?php if ($can('/admin/role/edit')): ?>
             <a class="btn btn-outline-primary" href="<?= $e($url('/admin/role/edit')) ?>"><i class="bi bi-plus-circle"></i> New role</a>
         <?php endif; ?>
+        <?php if ($can('/admin/config')): ?>
+            <a class="btn btn-outline-secondary" href="<?= $e($url('/admin/config')) ?>"><i class="bi bi-sliders"></i> Configuration</a>
+        <?php endif; ?>
     </div>
 
     <h2 class="section-label h6">How access works</h2>

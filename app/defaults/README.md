@@ -11,6 +11,9 @@ These files are required for the whole lifecycle of the application:
 - `accounts.json`, `roles.json`, `access.json`: the built-in accounts, roles
   and permissions
 
+The local `config/config.php` is managed by **Administration → Configuration** and contains only the
+settings that differ from `config.php`. Do not put defaults there.
+
 ## Seed data
 
 The `seed/` directory is only used once, when the configured recipe storage

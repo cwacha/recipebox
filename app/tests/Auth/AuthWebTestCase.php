@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Auth;
 
 use App\Application;
+use App\Config\ConfigStore;
 use App\Model\Recipe;
 use App\Repository\JsonFileRecipeRepository;
 
@@ -14,6 +15,7 @@ abstract class AuthWebTestCase extends AuthTestCase
     protected JsonFileRecipeRepository $recipes;
     protected string $recipeId;
     protected string $recipeSlug;
+    protected ?ConfigStore $configStore = null;
 
     protected function setUp(): void
     {
@@ -46,6 +48,7 @@ abstract class AuthWebTestCase extends AuthTestCase
         return new Application(
             $this->recipes,
             config: $config,
+            configStore: $this->configStore,
         );
     }
 

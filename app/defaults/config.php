@@ -25,25 +25,13 @@ return [
     // File name inside var/state/ (a bare file name; the directory is added automatically).
     'json_file' => 'recipes.json',
 
+    // File name inside var/state/ (a bare file name; the directory is added automatically).
+    'sqlite_file' => 'recipes.sqlite',
+
     // JSON import downloads pictures from other servers into public/images, and the AI import downloads the recipe
     // page itself. For safety, addresses inside private networks (localhost, 192.168.x.x, ...) are refused;
     // set to true to import from your own network.
     'import_allow_private_hosts' => false,
-
-    // Importing a recipe from a URL through an external LLM. The feature appears on the import page when
-    // llm_endpoint is set. It speaks the OpenAI-compatible chat completions format:
-    // POST {"model": ..., "messages": [{"role": "user", "content": ...}]} with "Authorization: Bearer <key>".
-    // The application downloads the page itself (with the same safety rules as image import) and puts its HTML
-    // into the prompt at {html}; if the placeholder is missing the HTML is appended. {url} is replaced too.
-    // The key never reaches the browser.
-    'llm_endpoint' => '',
-    'llm_api_key' => '',
-    'llm_model' => '',
-    'llm_prompt' => \App\Service\LlmRecipeExtractor::DEFAULT_PROMPT,
-    'llm_timeout' => 60,
-
-    // File name inside var/state/ (a bare file name; the directory is added automatically).
-    'sqlite_file' => 'recipes.sqlite',
 
     // Authentication and access control.
     // false switches the login off: everybody may do everything (including the administration!)
@@ -71,4 +59,17 @@ return [
     'auth_min_password_length' => 8,
     'auth_max_login_attempts' => 5,    // per account and address, then locked for auth_lockout_seconds
     'auth_lockout_seconds' => 900,
+
+    // Importing a recipe from a URL through an external LLM. The feature appears on the import page when
+    // llm_endpoint is set. It speaks the OpenAI-compatible chat completions format:
+    // POST {"model": ..., "messages": [{"role": "user", "content": ...}]} with "Authorization: Bearer <key>".
+    // The application downloads the page itself (with the same safety rules as image import) and puts its HTML
+    // into the prompt at {html}; if the placeholder is missing the HTML is appended. {url} is replaced too.
+    // The key never reaches the browser.
+    'llm_endpoint' => '',
+    'llm_api_key' => '',
+    'llm_model' => '',
+    'llm_prompt' => \App\Service\LlmRecipeExtractor::DEFAULT_PROMPT,
+    'llm_timeout' => 60,
+
 ];

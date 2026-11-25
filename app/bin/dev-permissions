@@ -4,15 +4,15 @@
 #   bin/dev-permissions [web-user]
 #
 # Use this when the app runs under Apache/nginx but the files belong to your login account (the usual case for
-# ~/Sites). The web server needs to write sessions, local account/role changes, uploaded pictures and imported
-# pictures. On macOS this uses ACLs with inheritance so both accounts can keep writing new files; on Linux it
-# uses a shared group.
+# ~/Sites). The web server needs to write sessions, local account/role changes, uploaded pictures, imported
+# pictures and the configuration saved in the administration. On macOS this uses ACLs with inheritance so both
+# accounts can keep writing new files; on Linux it uses a shared group.
 set -eu
 
 root=$(cd "$(dirname "$0")/.." && pwd)
 web=${1:-_www}
 me=$(whoami)
-dirs="var var/state var/sessions public/uploads public/images"
+dirs="config var var/state var/sessions public/uploads public/images"
 
 if [ "$me" = "$web" ]; then
     echo "The web server already runs as $me, nothing to do."

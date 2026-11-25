@@ -1,6 +1,6 @@
 {
-    "all": "ALL,show,/,/recipes,/recipes/new,/recipes/edit,/import,/account/password,/admin,/admin/accounts,/admin/account,/admin/account/edit,/admin/account/password,/admin/roles,/admin/role/edit,recipe_create,recipe_edit,recipe_delete,recipe_import,recipe_export,recipe_export_all,image_upload,account_edit,account_password,account_delete,role_edit,role_delete",
-    "admin": "show,/,/recipes,/account/password,/admin,/admin/accounts,/admin/account,/admin/account/edit,/admin/account/password,/admin/roles,/admin/role/edit,account_edit,account_password,account_delete,role_edit,role_delete",
+    "all": "ALL,show,/,/recipes,/recipes/new,/recipes/edit,/import,/account/password,/admin,/admin/accounts,/admin/account,/admin/account/edit,/admin/account/password,/admin/roles,/admin/role/edit,/admin/config,recipe_create,recipe_edit,recipe_delete,recipe_import,recipe_export,recipe_export_all,image_upload,account_edit,account_password,account_delete,role_edit,role_delete,config_edit",
+    "admin": "show,/,/recipes,/account/password,/admin,/admin/accounts,/admin/account,/admin/account/edit,/admin/account/password,/admin/roles,/admin/role/edit,/admin/config,account_edit,account_password,account_delete,role_edit,role_delete,config_edit",
     "editor": "show,/,/recipes,/recipes/new,/recipes/edit,/import,/account/password,recipe_create,recipe_edit,recipe_delete,recipe_import,recipe_export,recipe_export_all,image_upload",
     "reader": "show,/,/recipes"
 }

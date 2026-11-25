@@ -26,6 +26,7 @@ final class PermissionCatalog
         '/admin/account/password' => 'Form to set the password of an account',
         '/admin/roles' => 'List of roles and their permissions',
         '/admin/role/edit' => 'Form to create or edit a role',
+        '/admin/config' => 'Configuration of the application',
         'recipe_create' => 'Save a new recipe',
         'recipe_edit' => 'Save changes to a recipe',
         'recipe_delete' => 'Delete a recipe',
@@ -38,6 +39,7 @@ final class PermissionCatalog
         'account_delete' => 'Delete an account',
         'role_edit' => 'Save a role and its permissions',
         'role_delete' => 'Delete a role',
+        'config_edit' => 'Save the application configuration',
     ];
 
     public static function describe(string $permission): string

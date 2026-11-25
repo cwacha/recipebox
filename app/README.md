@@ -20,17 +20,29 @@ are bundled under `public/assets/vendor/`, so the browser needs no internet acce
 
 On Apache, point the document root at `public/` (`.htaccess` is included) and allow `.htaccess` overrides
 (`AllowOverride FileInfo AuthConfig Options`). Under nginx, route unknown paths to `public/index.php`.
-`var/state/`, `var/sessions/`, `public/images/` and `public/uploads/` must be writable by the web server, and nothing
+`config/`, `var/state/`, `var/sessions/`, `public/images/` and `public/uploads/` must be writable by the web server, and nothing
 outside `public/` may be served (see *Server locations*).
 
 ### Configuration
 
 The complete default configuration lives in `defaults/config.php`, including the comments for every setting. That
-file is read first and is replaced on upgrades, so do not edit it. Put local changes in `config/config.php`; the
+file is read first and is replaced on upgrades, so do not edit it. Local changes live in `config/config.php`; the
 application merges that file over the defaults. Overrides passed directly to the application are applied last.
 
+The easiest way to change a setting is **Administration → Configuration** (`/admin/config`). The page is generated
+from `defaults/config.php`: every setting appears automatically, with a control chosen from its type (on/off, text,
+number, textarea, or a list of allowed values). Values that differ from the shipped default are highlighted. Saving
+writes **only those differences** to `config/config.php` and marks that file as managed by the application, so
+resetting a setting to its default removes it from the local file again. Opening the page needs the `/admin/config`
+permission; saving needs `config_edit`.
+
+You can still edit `config/config.php` by hand. The administration reads the file, and the next save rewrites it in
+the managed, difference-only form. Environment variables (`RECIPES_*`, see the tables below) override the file and
+therefore keep working in deployments.
+
 All settings are flat. Nested sections use a prefix instead of a nested array: `llm_endpoint`, `auth_enabled`,
-`auth_cookie_secure`, and so on.
+`auth_cookie_secure`, and so on. A new setting added to `defaults/config.php` appears on the configuration page
+without code changes; add an entry to `App\Config\ConfigSchema` only when it needs a special control or description.
 
 ### Server location: base_url
 
@@ -65,7 +77,7 @@ For `http://localhost/~user/recipebox/public/` (Homebrew Apache with `UserDir Si
    bin/dev-permissions            # macOS: ACLs for _www and you; Linux: shared group, web user as argument
    ```
 
-   It makes `var/`, `var/state/`, `var/sessions/`, `public/uploads/` and `public/images/` writable for both accounts;
+   It makes `config/`, `var/`, `var/state/`, `var/sessions/`, `public/uploads/` and `public/images/` writable for both accounts;
    new files inherit this, so `bin/account` and the CLI keep working next to Apache.
 3. Open `http://localhost/~user/recipebox/public/`.
 
@@ -96,6 +108,7 @@ The REST-style `PUT` and `DELETE` routes remain for API clients that can send th
 | `/admin/account/password?id=…` | set the password of an account |
 | `/admin/roles` | all roles with their permissions (views and actions) and members |
 | `/admin/role/edit[?id=…]` | edit a role and its permissions, or create a new one (no `id`) |
+| `/admin/config` | edit the application configuration; only differences from the defaults are saved |
 
 Recipe URLs use a readable name (slug) generated from the title: umlauts become `ae`/`oe`/`ue`, duplicates get `-2`, `-3`, …
 The slug stays the same when you rename a recipe, so bookmarks keep working. Old links that contain the internal id
@@ -125,7 +138,7 @@ allow opening a page; *actions* are words (`recipe_delete`) and allow doing some
 | Role | Allows |
 |---|---|
 | `all` | every permission, enumerated; maintained automatically (contains everything any role mentions), cannot be edited or deleted |
-| `admin` | the whole administration (accounts, roles, passwords) |
+| `admin` | the whole administration (accounts, roles, passwords, configuration) |
 | `editor` | create, edit, delete, import and export recipes, upload pictures, change the own password |
 | `reader` | open the recipe list and recipes |
 
@@ -148,7 +161,7 @@ cookie. Several sources are accepted only if they name the same account; anythin
   when the account is deleted, disabled or its password changes.
 - **Persistent login** uses a random token (only its SHA-256 is stored in `var/state/auth_tokens.json`), expires after 30 days, is replaced at every
   use, and is revoked at sign-out and password change. It never contains a password.
-- **Cookies** are `HttpOnly`, `SameSite=Lax` and `Secure` when the request came over HTTPS (all configurable with the `auth_*` settings in `config/config.php`).
+- **Cookies** are `HttpOnly`, `SameSite=Lax` and `Secure` when the request came over HTTPS (all configurable with the `auth_*` settings in **Administration → Configuration**).
   Behind a reverse proxy that terminates TLS, set `auth_cookie_secure` to `true`.
 - **CSRF**: every change made with cookies (forms and scripts) needs the session's token (`_csrf` field or `X-CSRF-Token` header). HTTP Basic requests
   carry their credentials each time and need no token.
@@ -192,8 +205,8 @@ php bin/account create anna editor,reader
 
 ### Import from a URL (AI)
 
-The import page can ask an external LLM to read a recipe from a web page. Set the endpoint in `config/config.php` to
-enable it (an empty endpoint hides the feature entirely):
+The import page can ask an external LLM to read a recipe from a web page. Set the endpoint in
+**Administration → Configuration** (or in `config/config.php`) to enable it (an empty endpoint hides the feature entirely):
 
 ```php
 'llm_endpoint' => 'https://api.openai.com/v1/chat/completions',
@@ -259,7 +272,7 @@ Because anonymous users can trigger downloads, the server only fetches from the 
 80/443, no credentials in the URL, private/loopback/link-local addresses (e.g. `localhost`, `192.168.x.x`,
 `169.254.169.254`) are refused for the first request and every redirect, files are limited to 8 MB / 15 s, and the content
 must really be an image. To import from a server in your own network, set `RECIPES_IMPORT_ALLOW_PRIVATE_HOSTS=1`
-(or `import_allow_private_hosts` in `config/config.php`). Requires the `curl` PHP extension.
+(or `import_allow_private_hosts` in **Administration → Configuration**). Requires the `curl` PHP extension.
 
 ### JSON format
 
@@ -291,13 +304,14 @@ var/state/         persistence: recipes.json or recipes.sqlite, local account/ro
 var/sessions/      PHP sessions (not versioned)
 defaults/          application defaults used throughout the lifecycle: config.php, accounts.json, roles.json, access.json
 defaults/seed/     example data for a fresh install: recipes.json and images/
-config/config.php  local configuration overrides (custom settings)
+config/config.php  local configuration differences (managed by /admin/config)
 bin/migrate        copies recipes between storage backends
 bin/account        list accounts, set a password, create an account (recovery)
-bin/dev-permissions  lets the web server write var/, var/sessions/, uploads and images
+bin/dev-permissions  lets the web server write config/, var/, var/sessions/, uploads and images
 src/
   Application.php  wiring, routes, permission per route, base_url
-  Config.php       loads defaults/config.php, then config/config.php and caller overrides
+  Config.php       loads defaults/config.php, config/config.php, environment and caller overrides
+  Config/          ConfigSchema (controls per setting), ConfigForm (validation), ConfigStore (difference-only writer)
   constants.php    global filesystem constants (BASEDIR, CONFDIR, STATEDIR, ...)
   Auth/            SecurityController, AuthenticatorDefault, AuthorizerDefault (+ Contract/), WebAuth, Csrf, LayeredStore
   Http/            Request, Response, JsonResponse, RedirectResponse, Router, Session, Cookie
@@ -324,7 +338,7 @@ ranking logic (`AbstractRecipeRepository`); one test suite runs against both.
 | `json` (default) | `var/state/recipes.json` | single human-readable file, file locking and atomic writes |
 | `sqlite` | `var/state/recipes.sqlite` | needs `pdo_sqlite`; WAL mode, transactional writes, schema is created automatically |
 
-Select the backend in `config/config.php` (`'storage' => 'sqlite'`) or with an environment variable, e.g.
+Select the backend in **Administration → Configuration** (or `config/config.php`: `'storage' => 'sqlite'`) or with an environment variable, e.g.
 `RECIPES_STORAGE=sqlite composer start`. The file names can be changed with `RECIPES_STATE_FILE` (JSON) and
 `RECIPES_SQLITE_FILE` (SQLite). Both are bare file names; they are always placed inside `var/state/`.
 

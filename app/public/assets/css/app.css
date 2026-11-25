@@ -574,4 +574,11 @@ mark {
 .perm-view { background: var(--accent-soft); color: var(--accent-dark); }
 .perm-all { background: #ffe08a; color: #5c4400; font-weight: 600; }
 [data-bs-theme="dark"] .perm-view { color: #ffb48f; }
+.config-field { padding: .85rem 1rem; border: 1px solid var(--bs-border-color); border-radius: .65rem; background: var(--bs-body-bg); }
+.config-field.is-changed { border-color: var(--accent); background: var(--accent-soft); }
+.config-field.is-changed > div:first-child .form-label { color: var(--accent-dark); }
+[data-bs-theme="dark"] .config-field.is-changed > div:first-child .form-label { color: #ffb48f; }
+.config-key { font-size: .75rem; color: var(--bs-secondary-color); font-weight: 400; }
+.config-default code { white-space: pre-wrap; word-break: break-word; }
+.config-changed-badge { font-weight: 600; }
 .dropdown-menu form { margin: 0; }

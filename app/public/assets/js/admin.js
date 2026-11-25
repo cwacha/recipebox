@@ -25,4 +25,20 @@
         pending.dataset.confirmed = '1';
         pending.submit();
     });
+
+    /* Configuration: "automatic value" clears and disables the text field of that setting. */
+    function syncConfigNull(checkbox) {
+        const field = checkbox.closest('[data-config-field]');
+        const input = field ? field.querySelector('[data-config-text]') : null;
+        if (!input) return;
+        input.disabled = checkbox.checked;
+        if (checkbox.checked) input.value = '';
+    }
+
+    $(document).on('change', '[data-config-null]', function () {
+        syncConfigNull(this);
+    });
+    $('[data-config-null]').each(function () {
+        syncConfigNull(this);
+    });
 })(jQuery);
