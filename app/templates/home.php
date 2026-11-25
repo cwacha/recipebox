@@ -5,6 +5,7 @@
  * @var \Closure $highlight
  * @var \Closure $img
  * @var \Closure $minutes
+ * @var \Closure $can
  * @var int      $servings
  * @var string   $q
  * @var string   $category

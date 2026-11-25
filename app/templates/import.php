@@ -24,7 +24,7 @@
     </div>
 
     <label class="form-label mt-3" for="importText">…or paste JSON</label>
-    <textarea class="form-control font-monospace small" id="importText" rows="12" spellcheck="false" placeholder='{"title": "…"}'></textarea>
+    <textarea class="form-control font-monospace small" id="importText" rows="8" spellcheck="false" placeholder='{"title": "…"}'></textarea>
 
     <details class="mt-3">
         <summary class="small text-body-secondary">Expected format</summary>
