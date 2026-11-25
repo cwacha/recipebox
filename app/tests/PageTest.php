@@ -104,6 +104,32 @@ final class PageTest extends TestCase
         self::assertStringContainsString('New recipe', $this->get('/recipes/new')->body());
     }
 
+    public function testThirdPartyAssetsAreServedLocally(): void
+    {
+        $body = $this->get('/')->body();
+        $linked = [
+            '/assets/vendor/bootstrap/css/bootstrap.min.css',
+            '/assets/vendor/bootstrap/js/bootstrap.bundle.min.js',
+            '/assets/vendor/bootstrap-icons/bootstrap-icons.min.css',
+            '/assets/vendor/fonts/fonts.css',
+            '/assets/vendor/jquery/jquery.min.js',
+        ];
+        $files = [
+            '/assets/vendor/bootstrap-icons/fonts/bootstrap-icons.woff2',
+            '/assets/vendor/fonts/files/fraunces-latin.woff2',
+            '/assets/vendor/fonts/files/inter-latin.woff2',
+        ];
+
+        foreach ($linked as $asset) {
+            self::assertStringContainsString($asset, $body, $asset . ' is linked');
+        }
+        foreach ([...$linked, ...$files] as $asset) {
+            self::assertFileExists(dirname(__DIR__) . '/public' . $asset);
+        }
+        self::assertStringNotContainsString('cdn.jsdelivr.net', $body);
+        self::assertStringNotContainsString('fonts.googleapis.com', $body);
+    }
+
     /** @param array<string, string> $query */
     private function get(string $path, array $query = []): \App\Http\Response
     {

@@ -27,9 +27,9 @@
         <meta name="csrf-token" content="<?= $e($csrf()) ?>">
     <?php endif; ?>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🍳%3C/text%3E%3C/svg%3E">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="<?= $e($url('/assets/vendor/bootstrap/css/bootstrap.min.css')) ?>" rel="stylesheet">
+    <link href="<?= $e($url('/assets/vendor/bootstrap-icons/bootstrap-icons.min.css')) ?>" rel="stylesheet">
+    <link href="<?= $e($url('/assets/vendor/fonts/fonts.css')) ?>" rel="stylesheet">
     <link href="<?= $e($url('/assets/css/app.css')) ?>" rel="stylesheet">
     <script>
         (function () {
@@ -93,8 +93,8 @@
 
     <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toasts"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= $e($url('/assets/vendor/jquery/jquery.min.js')) ?>"></script>
+    <script src="<?= $e($url('/assets/vendor/bootstrap/js/bootstrap.bundle.min.js')) ?>"></script>
     <script src="<?= $e($url('/assets/js/app.js')) ?>"></script>
     <?php foreach ($scripts as $script): ?>
         <script src="<?= $e($url('/assets/js/' . $script)) ?>"></script>

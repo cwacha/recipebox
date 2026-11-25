@@ -47,7 +47,7 @@ $cancel = $recipe ? $url('/recipes/' . $recipe->slug) : $url('/');
             </div>
             <div class="col-12">
                 <label class="form-label" for="f-description">Short description</label>
-                <textarea class="form-control" id="f-description" name="description" rows="2"><?= $e($recipe?->description) ?></textarea>
+                <textarea class="form-control" id="f-description" name="description" rows="5"><?= $e($recipe?->description) ?></textarea>
             </div>
             <div class="col-lg-8">
                 <label class="form-label" for="f-image">Picture</label>
@@ -87,7 +87,7 @@ $cancel = $recipe ? $url('/recipes/' . $recipe->slug) : $url('/');
                     <?php foreach ($steps as $step): ?>
                         <div class="row-item">
                             <span class="num"></span>
-                            <textarea class="form-control step-text-input" rows="2" placeholder="Describe this step…"><?= $e($step) ?></textarea>
+                            <textarea class="form-control step-text-input" rows="3" placeholder="Describe this step…"><?= $e($step) ?></textarea>
                             <div class="btn-group-vertical btn-group-sm">
                                 <button type="button" class="btn btn-outline-secondary btn-up" title="Move up" aria-label="Move up"><i class="bi bi-chevron-up"></i></button>
                                 <button type="button" class="btn btn-outline-secondary btn-down" title="Move down" aria-label="Move down"><i class="bi bi-chevron-down"></i></button>

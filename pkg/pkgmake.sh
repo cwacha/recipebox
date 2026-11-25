@@ -28,6 +28,9 @@ import() {
 	rm -rf BUILD/var/sessions/*
 	rm -rf BUILD/public/uploads/*
 	rm -rf BUILD/public/images/*
+	rm -rf BUILD/tests
+	rm -rf BUILD/phpunit.xml
+	rm -rf BUILD/phpunit.xml
 
 	chmod 777 BUILD/config
 	chmod 777 BUILD/var/state

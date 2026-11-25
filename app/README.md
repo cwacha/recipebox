@@ -234,6 +234,7 @@ Required: `title`, `cooking_time` (minutes), `ingredients`, `steps`. Ingredients
 ```
 public/            web root: index.php (front controller), assets (app.js shared, one script per page),
                    images (recipe photos), uploads (user uploads)
+                   assets/vendor/: Bootstrap, Bootstrap Icons, jQuery and the web fonts (no CDN needed)
 var/state/         persistence: recipes.json or recipes.sqlite, local account/role changes, tokens (not versioned)
 var/sessions/      PHP sessions (not versioned)
 config/app.php     storage backend, base_dir/base_url, authentication settings
