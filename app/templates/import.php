@@ -41,7 +41,7 @@
                 <ol class="import-steps" id="urlImportSteps">
                     <li data-step="check"><i class="bi bi-circle" aria-hidden="true"></i><span class="step-label">Checking URL</span><span class="step-time"></span></li>
                     <li data-step="download"><i class="bi bi-circle" aria-hidden="true"></i><span class="step-label">Downloading website</span><span class="step-time"></span></li>
-                    <li data-step="ask"><i class="bi bi-circle" aria-hidden="true"></i><span class="step-label">Asking the robot</span><span class="step-time"></span></li>
+                    <li data-step="ask"><i class="bi bi-circle" aria-hidden="true"></i><span class="step-label">Bribing the hamster</span><span class="step-time"></span></li>
                     <li data-step="parse"><i class="bi bi-circle" aria-hidden="true"></i><span class="step-label">Parsing result</span><span class="step-time"></span></li>
                 </ol>
             </div>
