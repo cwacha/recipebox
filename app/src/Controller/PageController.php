@@ -32,7 +32,7 @@ final class PageController extends AbstractController
             'terms' => preg_split('/\s+/u', mb_strtolower($q), -1, PREG_SPLIT_NO_EMPTY) ?: [],
             'recipes' => $this->recipes->search($q, $category ?: null),
             'categories' => $this->recipes->categories(),
-        ], 'Recipe Box – your kitchen companion', 'home', ['home.js']));
+        ], $this->appTitle($request) . ' – your kitchen companion', 'home', ['home.js']));
     }
 
     public function show(Request $request, string $slug): Response
@@ -45,7 +45,7 @@ final class PageController extends AbstractController
         return $this->html($this->view($request)->page(
             'recipe',
             ['recipe' => $recipe],
-            $recipe->title . ' – Recipe Box',
+            $recipe->title . ' – ' . $this->appTitle($request),
             '',
             ['recipe.js'],
             $recipe->description !== '' ? $recipe->description : $recipe->title,
@@ -82,7 +82,7 @@ final class PageController extends AbstractController
                 'steps' => ['Toast the bread.', 'Mix tomatoes, oil, salt and basil.', 'Rub the toast with garlic and top with the tomatoes.'],
                 'tags' => ['italian', 'vegetarian'],
             ],
-        ], 'Import recipes – Recipe Box', 'import', ['import.js']));
+        ], 'Import recipes – ' . $this->appTitle($request), 'import', ['import.js']));
     }
 
     private function form(Request $request, ?Recipe $recipe): Response
@@ -90,7 +90,7 @@ final class PageController extends AbstractController
         return $this->html($this->view($request)->page('form', [
             'recipe' => $recipe,
             'categories' => $this->recipes->categories(),
-        ], ($recipe ? 'Edit ' . $recipe->title : 'New recipe') . ' – Recipe Box', $recipe ? '' : 'new', ['form.js']));
+        ], ($recipe ? 'Edit ' . $recipe->title : 'New recipe') . ' – ' . $this->appTitle($request), $recipe ? '' : 'new', ['form.js']));
     }
 
     /** Bookmarks made when URLs still contained the id keep working: they are redirected to the readable URL. */

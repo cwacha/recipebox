@@ -12,6 +12,9 @@ declare(strict_types=1);
  */
 
 return [
+    // Shown in the navigation bar, page titles and browser tabs. "Recipe Box" when empty.
+    'app_title' => 'Recipe Box',
+
     // URL under which public/ is served: '' for a document root, or a prefix such as
     // "/~user/recipebox/public". null (the default) detects it from the request, which is what you want
     // for the PHP built-in server and normal Apache/nginx setups. Set base_url to make it explicit,

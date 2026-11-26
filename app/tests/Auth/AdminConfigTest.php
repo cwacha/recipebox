@@ -182,6 +182,27 @@ final class AdminConfigTest extends AuthWebTestCase
         self::assertStringContainsString("'llm_timeout' => 42", (string) file_get_contents($this->localConfig));
     }
 
+    public function testTheSiteTitleIsConfigurableAndFallsBackToTheDefault(): void
+    {
+        $body = $this->admin->get('/admin/config')->body();
+        $titlePosition = strpos($body, 'config[app_title]');
+        $baseUrlPosition = strpos($body, 'config[base_url]');
+        self::assertNotFalse($titlePosition);
+        self::assertNotFalse($baseUrlPosition);
+        self::assertLessThan($baseUrlPosition, $titlePosition, 'the site title comes first');
+
+        $this->admin->post('/admin/config', ['config' => ['app_title' => 'My Kitchen']]);
+        self::assertSame('My Kitchen', $this->configStore->local()['app_title']);
+
+        $page = $this->admin->get('/admin/config')->body();
+        self::assertStringContainsString('<title>Configuration – Administration – My Kitchen</title>', $page);
+        self::assertStringContainsString('<i class="bi bi-egg-fried"></i> My Kitchen</a>', $page);
+
+        $this->admin->post('/admin/config', ['config' => ['app_title' => '']]);
+        self::assertArrayNotHasKey('app_title', $this->configStore->local());
+        self::assertStringContainsString('<title>Configuration – Administration – Recipe Box</title>', $this->admin->get('/admin/config')->body());
+    }
+
     public function testAnEmptiedTextareaRevertsToTheShippedDefault(): void
     {
         $this->admin->post('/admin/config', ['config' => [

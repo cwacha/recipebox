@@ -6,10 +6,19 @@ namespace App\Controller;
 
 use App\Http\JsonResponse;
 use App\Http\RedirectResponse;
+use App\Http\Request;
 use App\Http\Response;
 
 abstract class AbstractController
 {
+    /** The configured site title, "Recipe Box" when it is empty (e.g. on the setup pages). */
+    protected function appTitle(Request $request): string
+    {
+        $title = trim((string) $request->attribute('appTitle', ''));
+
+        return $title === '' ? 'Recipe Box' : $title;
+    }
+
     protected function json(mixed $data, int $status = 200): JsonResponse
     {
         return new JsonResponse($data, $status);

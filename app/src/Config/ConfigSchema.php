@@ -20,7 +20,8 @@ namespace App\Config;
  * configuration page working when a new setting is added to defaults/config.php.
  *
  * String and textarea entries should set "_placeholder": it is shown in the empty field as an
- * example of the expected value (the password control has its own hint).
+ * example of the expected value (the password control has its own hint). A string without
+ * "_allow_empty" falls back to its shipped default when it is cleared.
  */
 final class ConfigSchema
 {
@@ -33,6 +34,12 @@ final class ConfigSchema
 
     /** Control type and presentation hints for the shipped settings. */
     public const META = [
+        'app_title' => [
+            'string',
+            '_label' => 'Site title',
+            '_description' => 'Shown in the navigation bar, page titles and browser tabs. Leave empty to use the default, "Recipe Box".',
+            '_placeholder' => 'Recipe Box',
+        ],
         'base_url' => [
             'string', '_nullable' => true, '_allow_empty' => true,
             '_label' => 'Base URL',
@@ -58,7 +65,7 @@ final class ConfigSchema
             '_description' => 'Permit image and page downloads from localhost and private addresses. Only enable this on a trusted network.',
         ],
         'llm_endpoint' => [
-            'string',
+            'string', '_allow_empty' => true,
             '_label' => 'LLM endpoint',
             '_description' => 'OpenAI-compatible chat completions URL. When empty, import from URL will be hidden.',
             '_placeholder' => 'https://api.openai.com/v1/chat/completions',
@@ -69,7 +76,7 @@ final class ConfigSchema
             '_description' => 'Sent as "Authorization: Bearer ..." to the endpoint. It never reaches the browser.',
         ],
         'llm_model' => [
-            'string',
+            'string', '_allow_empty' => true,
             '_label' => 'LLM model',
             '_description' => 'Model name sent to the endpoint, for example gpt-4o-mini.',
             '_placeholder' => 'gpt-4o-mini',
@@ -96,7 +103,7 @@ final class ConfigSchema
             '_description' => 'Turn the login off only on a trusted machine: everybody may then do everything, including the administration.',
         ],
         'auth_guest_account' => [
-            'string',
+            'string', '_allow_empty' => true,
             '_label' => 'Guest account',
             '_description' => 'Account used for visitors who are not signed in. Leave empty to require signing in.',
             '_placeholder' => 'guest',

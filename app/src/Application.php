@@ -48,6 +48,8 @@ final class Application
     private readonly Router $router;
     /** @var array<string, mixed> */
     private readonly array $config;
+    /** @var array<string, mixed> caller overrides that win over the stored configuration */
+    private readonly array $configOverrides;
     /** Explicit URL prefix of public/, null when it is detected per request. */
     private readonly ?string $baseUrl;
     /** Contents of the VERSION file at the application root, empty when it cannot be read. */
@@ -72,6 +74,7 @@ final class Application
     ) {
         $this->configStore = $configStore ?? new ConfigStore(DEFAULTSDIR . '/config.php', CONFDIR . '/config.php');
         $this->installed = is_file($this->configStore->localFile());
+        $this->configOverrides = $config;
 
         try {
             // The store knows the shipped defaults and the local differences; caller overrides still win last.
@@ -121,10 +124,12 @@ final class Application
         try {
             $session = $request->attribute('session') ?? Session::native($this->webAuth->sessionOptions($request), $request->cookies);
             $identity = $this->webAuth->identify($request, $session);
+            $appTitle = $this->appTitle();
             $request = $request
                 ->with('session', $session)
                 ->with('identity', $identity)
-                ->with('shared', $this->sharedViewData($identity, $session));
+                ->with('appTitle', $appTitle)
+                ->with('shared', $this->sharedViewData($identity, $session, $appTitle));
 
             $response = $identity->failed()
                 ? $this->unauthorized($request, 'Invalid credentials.')
@@ -235,19 +240,37 @@ final class Application
         }
 
         $html = View::forRequest(BASEDIR . '/templates', $request)
-            ->page('error', ['status' => $status, 'message' => $message], 'Error ' . $status . ' – Recipe Box');
+            ->page('error', ['status' => $status, 'message' => $message], 'Error ' . $status . ' – ' . $this->appTitle());
 
         return new Response($html, $status);
     }
 
+    /**
+     * The configured site title, read fresh so a saved change is visible on the next request.
+     * Falls back to the product name when the setting is empty or the configuration is broken.
+     */
+    private function appTitle(): string
+    {
+        try {
+            $config = array_replace($this->configStore->current(), $this->configOverrides);
+        } catch (Throwable) {
+            $config = $this->config;
+        }
+
+        $title = trim((string) ($config['app_title'] ?? ''));
+
+        return $title === '' ? 'Recipe Box' : $title;
+    }
+
     /** @return array<string, mixed> what every template can use to show the right menu and forms */
-    private function sharedViewData(Identity $identity, Session $session): array
+    private function sharedViewData(Identity $identity, Session $session, string $appTitle): array
     {
         $security = $this->security;
         $csrf = $this->csrf;
         $publicDir = BASEDIR . '/public';
 
         return [
+            'appTitle' => $appTitle,
             // Browsers cache scripts and styles without asking the server; a changed file needs a new URL.
             'asset' => static function (string $path) use ($publicDir): string {
                 $stamp = is_file($publicDir . $path) ? filemtime($publicDir . $path) : false;

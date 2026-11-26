@@ -103,6 +103,18 @@ final class PageTest extends TestCase
         self::assertStringContainsString('New recipe', $this->get('/recipes/new')->body());
     }
 
+    public function testTheConfiguredSiteTitleIsShownInTheNavigationAndPageTitles(): void
+    {
+        $app = new Application(
+            new JsonFileRecipeRepository($this->dir . '/recipes.json'),
+            config: ['auth_enabled' => false, 'app_title' => 'My Kitchen'],
+        );
+        $body = $app->handle(new Request('GET', '/', ''))->body();
+
+        self::assertStringContainsString('<title>My Kitchen – your kitchen companion</title>', $body);
+        self::assertStringContainsString('<i class="bi bi-egg-fried"></i> My Kitchen</a>', $body);
+    }
+
     public function testThirdPartyAssetsAreServedLocally(): void
     {
         $body = $this->get('/')->body();

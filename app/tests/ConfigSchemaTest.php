@@ -39,6 +39,18 @@ final class ConfigSchemaTest extends TestCase
         self::assertSame(1, ConfigSchema::describe('llm_timeout', 60)['min']);
     }
 
+    public function testTheSiteTitleSettingComesFirstAndRevertsWhenCleared(): void
+    {
+        $defaults = require BASEDIR . '/defaults/config.php';
+
+        self::assertSame('app_title', array_key_first($defaults));
+        self::assertSame('Recipe Box', $defaults['app_title']);
+        self::assertFalse(ConfigSchema::describe('app_title', 'Recipe Box')['allow_empty']);
+        self::assertTrue(ConfigSchema::describe('llm_endpoint', '')['allow_empty']);
+        self::assertTrue(ConfigSchema::describe('auth_guest_account', 'guest')['allow_empty']);
+        self::assertFalse(ConfigSchema::describe('json_file', 'recipes.json')['allow_empty']);
+    }
+
     public function testEveryShippedTextSettingHasAPlaceholder(): void
     {
         $defaults = require BASEDIR . '/defaults/config.php';

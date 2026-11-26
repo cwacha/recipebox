@@ -369,7 +369,7 @@ final class AdminController extends AbstractController
     private function page(Request $request, string $template, array $vars, string $title, int $status = 200): Response
     {
         $html = View::forRequest($this->templateDir, $request)
-            ->page($template, $vars, $title . ' – Administration – Recipe Box', 'admin', ['admin.js']);
+            ->page($template, $vars, $title . ' – Administration – ' . $this->appTitle($request), 'admin', ['admin.js']);
 
         return $this->html($html, $status);
     }

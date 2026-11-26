@@ -62,6 +62,9 @@ All settings are flat. Nested sections use a prefix instead of a nested array: `
 `auth_cookie_secure`, and so on. A new setting added to `defaults/config.php` appears on the configuration page
 without code changes; add an entry to `App\Config\ConfigSchema` only when it needs a special control or description.
 
+The site title is the first setting on that page (`app_title`). It defaults to `Recipe Box` and is used in the
+navigation bar, page titles and browser tabs; clearing it falls back to the default.
+
 ### Server location: base_url
 
 The application's filesystem root is fixed by `BASEDIR` in `src/constants.php`. Only the public URL prefix is configurable:

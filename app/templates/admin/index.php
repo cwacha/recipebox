@@ -10,6 +10,7 @@
  * @var int    $permissionCount
  * @var bool   $defaultPassword
  * @var string $version           the application version from the root VERSION file
+ * @var string $appTitle          the configured site title
  */
 $tiles = [
     ['/admin/accounts', 'bi-people', $accountCount, 'Accounts', $signInCount . ' can sign in', '/admin/accounts'],
@@ -72,5 +73,5 @@ $tiles = [
     </ul>
 </main>
 <footer class="py-4 text-center text-body-secondary small no-print">
-    Recipe Box <span class="mx-3"></span> <i class="bi bi-tag"></i> Version <?= $e($version) ?>
+    <?= $e($appTitle) ?> <span class="mx-3"></span> <i class="bi bi-tag"></i> Version <?= $e($version) ?>
 </footer>

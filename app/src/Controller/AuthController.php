@@ -121,7 +121,7 @@ final class AuthController extends AbstractController
         return $this->html($this->view($request)->page('account_password', [
             'accountId' => $identity->accountId,
             'errors' => $errors,
-        ], 'Change password – Recipe Box'), $status);
+        ], 'Change password – ' . $this->appTitle($request)), $status);
     }
 
     private function loginPage(Request $request, string $next, string $username, ?string $error, int $status = 200): Response
@@ -131,7 +131,7 @@ final class AuthController extends AbstractController
             'username' => $username,
             'error' => $error,
             'guestsAllowed' => $this->guestsAllowed,
-        ], 'Sign in – Recipe Box', 'login'), $status);
+        ], 'Sign in – ' . $this->appTitle($request), 'login'), $status);
     }
 
     /** Only paths inside this application are accepted as the place to go after signing in. */

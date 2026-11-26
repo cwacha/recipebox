@@ -68,6 +68,7 @@ final class View
         ];
 
         $sharedDefaults = [
+            'appTitle' => 'Recipe Box',
             'asset' => static fn (string $path): string => $path,
             'version' => '',
             'authEnabled' => false,

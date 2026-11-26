@@ -8,6 +8,7 @@
  * @var string   $description
  * @var list<string> $scripts
  * @var string   $basePath
+ * @var string   $appTitle    the configured site title
  * @var bool      $authEnabled
  * @var ?array    $user       the signed in account (not a guest)
  * @var bool      $isGuest
@@ -44,7 +45,7 @@
 
     <nav class="navbar navbar-expand-md app-navbar sticky-top">
         <div class="container">
-            <a class="navbar-brand brand" href="<?= $e($url('/')) ?>"><i class="bi bi-egg-fried"></i> Recipe Box</a>
+            <a class="navbar-brand brand" href="<?= $e($url('/')) ?>"><i class="bi bi-egg-fried"></i> <?= $e($appTitle) ?></a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-label="Menu">
                 <span class="navbar-toggler-icon"></span>
             </button>
