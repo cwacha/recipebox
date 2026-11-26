@@ -123,12 +123,16 @@ else
 fi
 
 echo "Starting upload: user=$SFTP_USER pass=***** host=$SFTP_HOST port=$SFTP_PORT uri=$SFTP_URI"
-sftp_tryconnect || exit 1
+sftp_tryconnect || {
+	echo "ERROR: Connection failed."
+	exit 1 
+} 
 
+echo "Scanning files..."
 sftp_connect
 for opt in "$@"; do
 	[ -f "$opt" ] && sftp_putfile "$opt"
 	[ -d "$opt" ] && sftp_putdir "$opt"
 done
-echo "Scanning complete."
+echo "Starting transfer..."
 sftp_commit

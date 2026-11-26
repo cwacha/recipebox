@@ -23,6 +23,8 @@ import() {
 	mkdir BUILD
 	cp -r ../app/* BUILD 2> /dev/null
 	find BUILD -depth -name ".DS_Store" -exec rm {} \;
+	find BUILD -depth -name ".gitignore" -exec rm {} \;
+	find BUILD -depth -name ".gitkeep" -exec rm {} \;
 	rm -rf BUILD/config/*
 	rm -rf BUILD/var/state/*
 	rm -rf BUILD/var/sessions/*
@@ -68,7 +70,7 @@ deploy() {
 	IFS="
 "
 	for line in `grep -v "^#" .deploy-urls`; do
-		$BASEDIR/sftp_upload.sh $line iaddressbook-*/*
+		$BASEDIR/sftp_upload.sh $line recipebox-*/*
 	done
 }
 
