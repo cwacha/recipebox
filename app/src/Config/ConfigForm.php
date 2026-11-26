@@ -89,7 +89,10 @@ final class ConfigForm
             }
 
             if ($meta['type'] === 'textarea') {
-                $values[$key] = str_replace("\r\n", "\n", self::text($raw));
+                $text = str_replace("\r\n", "\n", self::text($raw));
+                // An emptied textarea means "use the shipped text". Storing '' would pin an empty
+                // value that also hides later improvements to the default.
+                $values[$key] = trim($text) === '' ? $default : $text;
                 continue;
             }
 

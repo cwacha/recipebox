@@ -43,6 +43,12 @@
     box-shadow: 0 0 0 .25rem rgba(var(--bs-primary-rgb), .2);
 }
 
+/* Keep example values visually distinct from text the user actually entered. */
+.form-control::placeholder {
+    color: var(--bs-secondary-color);
+    opacity: .45;
+}
+
 h1, h2.display, .brand, .recipe-title, .card-title-serif {
     font-family: var(--font-display);
 }

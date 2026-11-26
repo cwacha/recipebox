@@ -39,6 +39,24 @@ final class ConfigSchemaTest extends TestCase
         self::assertSame(1, ConfigSchema::describe('llm_timeout', 60)['min']);
     }
 
+    public function testEveryShippedTextSettingHasAPlaceholder(): void
+    {
+        $defaults = require BASEDIR . '/defaults/config.php';
+
+        foreach ($defaults as $key => $default) {
+            $meta = ConfigSchema::describe((string) $key, $default);
+            if (in_array($meta['type'], ['string', 'textarea'], true)) {
+                self::assertNotSame('', $meta['placeholder'], (string) $key);
+            }
+        }
+    }
+
+    public function testPlaceholdersAreExposedAsPlainText(): void
+    {
+        self::assertSame('recipes.json', ConfigSchema::describe('json_file', 'recipes.json')['placeholder']);
+        self::assertSame('', ConfigSchema::describe('llm_timeout', 60)['placeholder']);
+    }
+
     public function testChoiceValuesKeepTheirType(): void
     {
         $choices = ConfigSchema::describe('auth_cookie_secure', 'auto')['choices'];

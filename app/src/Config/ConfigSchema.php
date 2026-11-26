@@ -12,12 +12,15 @@ namespace App\Config;
  *     'storage' => ['multichoice', '_choices' => ['json' => 'json', 'sqlite' => 'sqlite'],
  *                   '_choice_labels' => ['json' => 'JSON file', 'sqlite' => 'SQLite database']],
  *     'auth_enabled' => ['onoff'],
- *     'llm_prompt' => ['textarea'],
+ *     'llm_prompt' => ['textarea', '_placeholder' => 'Turn this page into a recipe: {html}'],
  *     'base_url' => ['string', '_nullable' => true, '_allow_empty' => true],
  *
  * Settings that are not listed here still work: their control is inferred from the type of the
  * shipped default (bool = on/off, int = number, everything else = text). This keeps the generated
  * configuration page working when a new setting is added to defaults/config.php.
+ *
+ * String and textarea entries should set "_placeholder": it is shown in the empty field as an
+ * example of the expected value (the password control has its own hint).
  */
 final class ConfigSchema
 {
@@ -34,6 +37,7 @@ final class ConfigSchema
             'string', '_nullable' => true, '_allow_empty' => true,
             '_label' => 'Base URL',
             '_description' => 'URL prefix under which public/ is served. Leave it automatic unless a reverse proxy strips the prefix.',
+            '_placeholder' => 'Detected automatically',
         ],
         'storage' => [
             'multichoice',
@@ -46,6 +50,7 @@ final class ConfigSchema
             'string',
             '_label' => 'JSON file name',
             '_description' => 'A bare file name inside var/state/. The directory is added automatically.',
+            '_placeholder' => 'recipes.json',
         ],
         'import_allow_private_hosts' => [
             'onoff',
@@ -55,7 +60,8 @@ final class ConfigSchema
         'llm_endpoint' => [
             'string',
             '_label' => 'LLM endpoint',
-            '_description' => 'OpenAI-compatible chat completions URL (e.g. https://api.openai.com/v1/chat/completions). When empty, import from URL will be hidden.',
+            '_description' => 'OpenAI-compatible chat completions URL. When empty, import from URL will be hidden.',
+            '_placeholder' => 'https://api.openai.com/v1/chat/completions',
         ],
         'llm_api_key' => [
             'password',
@@ -66,11 +72,13 @@ final class ConfigSchema
             'string',
             '_label' => 'LLM model',
             '_description' => 'Model name sent to the endpoint, for example gpt-4o-mini.',
+            '_placeholder' => 'gpt-4o-mini',
         ],
         'llm_prompt' => [
             'textarea',
             '_label' => 'LLM prompt',
             '_description' => '{html} is replaced with the page source and {url} with the address. Without {html} the HTML is appended.',
+            '_placeholder' => 'Turn this web page into a recipe. Make no mistakes! Page source: {html}',
         ],
         'llm_timeout' => [
             'int', '_min' => 1,
@@ -80,6 +88,7 @@ final class ConfigSchema
             'string',
             '_label' => 'SQLite file name',
             '_description' => 'A bare file name inside var/state/. The directory is added automatically.',
+            '_placeholder' => 'recipes.sqlite',
         ],
         'auth_enabled' => [
             'onoff',
@@ -90,24 +99,29 @@ final class ConfigSchema
             'string',
             '_label' => 'Guest account',
             '_description' => 'Account used for visitors who are not signed in. Leave empty to require signing in.',
+            '_placeholder' => 'guest',
         ],
         'auth_authenticator' => [
             'string',
             '_label' => 'Authenticator provider',
             '_description' => 'Name of a provider registered in code. The shipped provider is "default".',
+            '_placeholder' => 'default',
         ],
         'auth_authorizer' => [
             'string',
             '_label' => 'Authorizer provider',
             '_description' => 'Name of a provider registered in code. The shipped provider is "default".',
+            '_placeholder' => 'default',
         ],
         'auth_session_name' => [
             'string',
             '_label' => 'Session cookie name',
+            '_placeholder' => 'recipebox_session',
         ],
         'auth_remember_cookie' => [
             'string',
             '_label' => 'Remember-me cookie name',
+            '_placeholder' => 'recipebox_remember',
         ],
         'auth_remember_days' => [
             'int', '_min' => 1,
@@ -151,7 +165,8 @@ final class ConfigSchema
      *     min: ?int,
      *     max: ?int,
      *     label: string,
-     *     description: string
+     *     description: string,
+     *     placeholder: string
      * }
      */
     public static function describe(string $key, mixed $default): array
@@ -181,6 +196,7 @@ final class ConfigSchema
             'max' => isset($meta['_max']) ? (int) $meta['_max'] : null,
             'label' => (string) ($meta['_label'] ?? ucfirst(str_replace('_', ' ', $key))),
             'description' => (string) ($meta['_description'] ?? ''),
+            'placeholder' => (string) ($meta['_placeholder'] ?? ''),
         ];
     }
 

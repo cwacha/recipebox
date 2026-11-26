@@ -45,6 +45,16 @@ final class AdminConfigTest extends AuthWebTestCase
         self::assertStringContainsString('Everything uses the shipped defaults', $body);
     }
 
+    public function testPlaceholdersAreShownOnStringAndTextareaControls(): void
+    {
+        $body = $this->admin->get('/admin/config')->body();
+
+        self::assertStringContainsString('placeholder="https://api.openai.com/v1/chat/completions"', $body);
+        self::assertStringContainsString('placeholder="recipes.json"', $body);
+        self::assertStringContainsString('placeholder="Turn this web page into a recipe', $body);
+        self::assertStringContainsString('placeholder="Detected automatically"', $body);
+    }
+
     public function testOnlyAccountsWithTheViewPermissionCanOpenThePage(): void
     {
         $reader = $this->loggedIn('rd', 'readerpass1');
@@ -170,6 +180,25 @@ final class AdminConfigTest extends AuthWebTestCase
 
         // The generated file must be valid PHP with the same values.
         self::assertStringContainsString("'llm_timeout' => 42", (string) file_get_contents($this->localConfig));
+    }
+
+    public function testAnEmptiedTextareaRevertsToTheShippedDefault(): void
+    {
+        $this->admin->post('/admin/config', ['config' => [
+            'llm_prompt' => 'Custom prompt with {html}',
+        ]]);
+        self::assertSame('Custom prompt with {html}', $this->configStore->local()['llm_prompt']);
+
+        $response = $this->admin->post('/admin/config', ['config' => [
+            'llm_prompt' => "  \n ",
+        ]]);
+
+        self::assertSame(303, $response->status());
+        self::assertArrayNotHasKey('llm_prompt', $this->configStore->local());
+        self::assertSame(
+            $this->configStore->defaults()['llm_prompt'],
+            $this->configStore->current()['llm_prompt'],
+        );
     }
 
     public function testSubmittingTheWholeFormWithoutChangesWritesNothing(): void

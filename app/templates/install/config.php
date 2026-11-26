@@ -78,7 +78,7 @@
                                             <label class="form-check-label" for="<?= $e($id) ?>-automatic">Use the automatic value</label>
                                         </div>
                                     <?php endif; ?>
-                                    <input class="form-control<?= $invalid ?>" type="text" id="<?= $e($id) ?>" name="config[<?= $e($key) ?>]" value="<?= $e($value === null ? '' : (string) $value) ?>"<?= $meta['nullable'] ? ' data-config-text' . ($value === null ? ' disabled' : '') : '' ?>>
+                                    <input class="form-control<?= $invalid ?>" type="text" id="<?= $e($id) ?>" name="config[<?= $e($key) ?>]" value="<?= $e($value === null ? '' : (string) $value) ?>"<?= $meta['placeholder'] !== '' ? ' placeholder="' . $e($meta['placeholder']) . '"' : '' ?><?= $meta['nullable'] ? ' data-config-text' . ($value === null ? ' disabled' : '') : '' ?>>
                                 <?php endif; ?>
 
                                 <?php if ($error !== null): ?>

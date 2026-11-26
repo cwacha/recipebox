@@ -118,7 +118,7 @@ $canEdit = $can('config_edit');
                                     <?php endforeach; ?>
                                 </select>
                             <?php elseif ($meta['type'] === 'textarea'): ?>
-                                <textarea class="form-control font-monospace<?= $invalid ?>" id="<?= $e($id) ?>" name="config[<?= $e($key) ?>]" rows="<?= $key === 'llm_prompt' ? 8 : 4 ?>"><?= $e((string) $value) ?></textarea>
+                                <textarea class="form-control font-monospace<?= $invalid ?>" id="<?= $e($id) ?>" name="config[<?= $e($key) ?>]" rows="<?= $key === 'llm_prompt' ? 8 : 4 ?>"<?= $meta['placeholder'] !== '' ? ' placeholder="' . $e($meta['placeholder']) . '"' : '' ?>><?= $e((string) $value) ?></textarea>
                             <?php elseif ($meta['type'] === 'int'): ?>
                                 <input class="form-control<?= $invalid ?>" type="number" step="1" id="<?= $e($id) ?>" name="config[<?= $e($key) ?>]" value="<?= $e((string) $value) ?>"<?= $meta['min'] !== null ? ' min="' . $meta['min'] . '"' : '' ?><?= $meta['max'] !== null ? ' max="' . $meta['max'] . '"' : '' ?>>
                             <?php elseif ($meta['type'] === 'password'): ?>
@@ -138,7 +138,7 @@ $canEdit = $can('config_edit');
                                         <label class="form-check-label" for="<?= $e($id) ?>-automatic">Use the automatic value</label>
                                     </div>
                                 <?php endif; ?>
-                                <input class="form-control<?= $invalid ?>" type="text" id="<?= $e($id) ?>" name="config[<?= $e($key) ?>]" value="<?= $e($value === null ? '' : (string) $value) ?>"<?= $meta['nullable'] ? ' data-config-text' . ($value === null ? ' disabled' : '') : '' ?>>
+                                <input class="form-control<?= $invalid ?>" type="text" id="<?= $e($id) ?>" name="config[<?= $e($key) ?>]" value="<?= $e($value === null ? '' : (string) $value) ?>"<?= $meta['placeholder'] !== '' ? ' placeholder="' . $e($meta['placeholder']) . '"' : '' ?><?= $meta['nullable'] ? ' data-config-text' . ($value === null ? ' disabled' : '') : '' ?>>
                             <?php endif; ?>
 
                             <?php if (isset($errors[$key])): ?>

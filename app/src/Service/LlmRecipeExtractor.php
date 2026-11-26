@@ -17,7 +17,7 @@ use App\Validation\RecipeValidator;
 final class LlmRecipeExtractor implements RecipeExtractor
 {
     public const DEFAULT_PROMPT = <<<'PROMPT'
-You are a recipe extraction service. The HTML source of the web page at {url} is included below. Return its cooking recipe as one JSON object. Return JSON only, without markdown fences or commentary.
+You are a recipe extraction service. The HTML source of the web page is included below. Return its cooking recipe as one JSON object. Return JSON only, without markdown fences or commentary.
 
 The object must have these keys:
 - "title": the recipe name (string, required)
