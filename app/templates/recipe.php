@@ -37,15 +37,16 @@ $src = $img($recipe->image);
             <span class="meta-pill"><i class="bi bi-list-ol"></i> <?= count($recipe->steps) ?> steps</span>
         </div>
         <div class="d-flex gap-2 flex-wrap no-print">
+            <button type="button" class="btn btn-outline-secondary d-none" id="btnWakeLock" aria-pressed="false"><i class="bi bi-lightbulb"></i> Keep screen on</button>
             <button type="button" class="btn btn-outline-secondary" id="btnPrint"><i class="bi bi-printer"></i> Print</button>
             <?php if ($can('recipe_export')): ?>
                 <a class="btn btn-outline-secondary" href="<?= $e($url('/api/recipes/' . $recipe->id . '/export')) ?>"><i class="bi bi-filetype-json"></i> JSON</a>
             <?php endif; ?>
             <?php if ($can('/recipes/edit')): ?>
-                <a class="btn btn-primary" href="<?= $e($url('/recipes/' . $recipe->slug . '/edit')) ?>"><i class="bi bi-pencil"></i> Edit</a>
+                <a class="btn btn-primary d-none d-sm-inline-block" href="<?= $e($url('/recipes/' . $recipe->slug . '/edit')) ?>"><i class="bi bi-pencil"></i> Edit</a>
             <?php endif; ?>
             <?php if ($can('recipe_delete')): ?>
-                <button type="button" class="btn btn-outline-danger" id="btnDelete"><i class="bi bi-trash3"></i> Delete</button>
+                <button type="button" class="btn btn-outline-danger d-none d-sm-inline-block js-delete-recipe" id="btnDelete"><i class="bi bi-trash3"></i> Delete</button>
             <?php endif; ?>
         </div>
     </div>
@@ -83,6 +84,17 @@ $src = $img($recipe->image);
             <?php foreach ($recipe->tags as $tag): ?>
                 <a class="tag text-decoration-none" href="<?= $e($url('/?q=' . rawurlencode($tag))) ?>">#<?= $e($tag) ?></a>
             <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($can('/recipes/edit') || $can('recipe_delete')): ?>
+        <div class="d-flex d-sm-none justify-content-end gap-2 mt-4 pt-3 border-top no-print">
+            <?php if ($can('/recipes/edit')): ?>
+                <a class="btn btn-primary" href="<?= $e($url('/recipes/' . $recipe->slug . '/edit')) ?>"><i class="bi bi-pencil"></i> Edit</a>
+            <?php endif; ?>
+            <?php if ($can('recipe_delete')): ?>
+                <button type="button" class="btn btn-outline-danger js-delete-recipe"><i class="bi bi-trash3"></i> Delete</button>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 </main>
