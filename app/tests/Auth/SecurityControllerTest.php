@@ -83,7 +83,7 @@ final class SecurityControllerTest extends AuthTestCase
         }
 
         // with a second administrator the first one may be changed
-        $security->saveAccount('boss', ['password' => 'boss-password'], ['admin']);
+        $security->saveAccount('boss', ['password' => 'boss-password'], ['all']);
         $security->saveAccount('admin', [], ['reader']);
         self::assertSame(['reader'], $this->security()->getAccount('admin')['roles']);
 
@@ -98,11 +98,12 @@ final class SecurityControllerTest extends AuthTestCase
     public function testRoleChangesThatRemoveTheLastAdministratorAreRefused(): void
     {
         $security = $this->security();
-        $security->saveAccount('boss', ['password' => 'boss-password'], ['admin']);
+        $security->saveRole('administrator', ['show', '/', '/admin/account/edit', '/admin/role/edit', 'account_edit', 'role_edit']);
+        $security->saveAccount('boss', ['password' => 'boss-password'], ['administrator']);
         $security->saveAccount('admin', [], []);
 
         $this->expectException(LockoutPrevented::class);
-        $security->saveRole('admin', ['show', '/']);
+        $security->saveRole('administrator', ['show', '/']);
     }
 
     public function testFailedValidationDiscardsTheWholeChange(): void

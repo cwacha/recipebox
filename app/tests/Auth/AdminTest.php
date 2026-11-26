@@ -41,7 +41,7 @@ final class AdminTest extends AuthWebTestCase
         self::assertStringNotContainsString('/admin/roles', $account, 'editors have no admin views');
 
         $roles = $this->admin->get('/admin/roles')->body();
-        foreach (['all', 'admin', 'editor', 'reader', '/admin/role/edit', 'recipe_delete'] as $text) {
+        foreach (['all', 'editor', 'reader', '/admin/role/edit', 'recipe_delete'] as $text) {
             self::assertStringContainsString($text, $roles);
         }
 

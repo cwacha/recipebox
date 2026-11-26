@@ -64,6 +64,6 @@ return [
     'llm_api_key' => '',
     'llm_model' => '',
     'llm_prompt' => \App\Service\LlmRecipeExtractor::DEFAULT_PROMPT,
-    'llm_timeout' => 60,
+    'llm_timeout' => 120,
 
 ];

@@ -226,12 +226,12 @@ final class AdminConfigTest extends AuthWebTestCase
         self::assertArrayNotHasKey('llm_api_key', $this->configStore->local());
     }
 
-    public function testTheAdminRoleShipsWithTheConfigurationPermissions(): void
+    public function testTheAllRoleShipsWithTheConfigurationPermissions(): void
     {
         $roles = json_decode((string) file_get_contents(BASEDIR . '/defaults/roles.json'), true, 512, JSON_THROW_ON_ERROR);
 
-        self::assertContains('/admin/config', explode(',', $roles['admin']));
-        self::assertContains('config_edit', explode(',', $roles['admin']));
+        self::assertContains('/admin/config', explode(',', $roles['all']));
+        self::assertContains('config_edit', explode(',', $roles['all']));
     }
 
     public function testUnknownSettingsCannotBeInjected(): void
