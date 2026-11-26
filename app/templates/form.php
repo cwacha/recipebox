@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @var \Closure $e
  * @var \Closure $url
@@ -63,7 +64,7 @@ $cancel = $recipe ? $url('/recipes/' . $recipe->slug) : $url('/');
                 <label class="form-label" for="f-tags">Tags</label>
                 <input class="form-control" id="f-tags" name="tags" placeholder="vegetarian, quick, italian" value="<?= $e($recipe ? implode(', ', $recipe->tags) : '') ?>">
             </div>
-            <div class="col-12" id="imagePreviewWrap"<?= $preview ? '' : ' hidden' ?>>
+            <div class="col-12" id="imagePreviewWrap" <?= $preview ? '' : ' hidden' ?>>
                 <img id="imagePreview" class="img-preview" alt="Preview" src="<?= $e($preview) ?>">
             </div>
 
@@ -87,7 +88,7 @@ $cancel = $recipe ? $url('/recipes/' . $recipe->slug) : $url('/');
                     <?php foreach ($steps as $step): ?>
                         <div class="row-item">
                             <span class="num"></span>
-                            <textarea class="form-control step-text-input" rows="3" placeholder="Describe this step…"><?= $e($step) ?></textarea>
+                            <textarea class="form-control step-text-input" rows="5" placeholder="Describe this step…"><?= $e($step) ?></textarea>
                             <div class="btn-group-vertical btn-group-sm">
                                 <button type="button" class="btn btn-outline-secondary btn-up" title="Move up" aria-label="Move up"><i class="bi bi-chevron-up"></i></button>
                                 <button type="button" class="btn btn-outline-secondary btn-down" title="Move down" aria-label="Move down"><i class="bi bi-chevron-down"></i></button>
@@ -97,13 +98,14 @@ $cancel = $recipe ? $url('/recipes/' . $recipe->slug) : $url('/');
                     <?php endforeach; ?>
                 </div>
                 <div class="invalid-feedback d-block" id="f-steps-error"></div>
-                <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addStep"><i class="bi bi-plus"></i> Add step</button>
+                <div class="text-end">
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addStep"><i class="bi bi-plus"></i> Add step</button>
+                </div>
             </div>
-        </div>
 
-        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-            <a class="btn btn-link text-body-secondary" href="<?= $e($cancel) ?>">Cancel</a>
-            <button type="submit" class="btn btn-primary" id="btnSave"><i class="bi bi-check-lg"></i> Save recipe</button>
-        </div>
+            <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                <a class="btn btn-link text-body-secondary" href="<?= $e($cancel) ?>">Cancel</a>
+                <button type="submit" class="btn btn-primary" id="btnSave"><i class="bi bi-check-lg"></i> Save recipe</button>
+            </div>
     </form>
 </main>
