@@ -22,7 +22,7 @@ final class AccessTest extends AuthWebTestCase
     public function testAnAccountThatMayNotEvenShowTheListGetsAnErrorPageInsteadOfALoop(): void
     {
         $security = \App\Auth\AuthFactory::create(\App\Auth\AuthFactory::normalize([
-            'defaults_dir' => $this->dir . '/defaults', 'state_dir' => $this->dir . '/state', 'password_cost' => 4,
+            'password_cost' => 4,
         ]));
         $security->saveRole('nolist', ['/account/password']);
         $security->saveAccount('nolist', ['password' => 'nolist-password'], ['nolist']);
@@ -194,7 +194,7 @@ final class AccessTest extends AuthWebTestCase
     private function security(): \App\Auth\SecurityController
     {
         return \App\Auth\AuthFactory::create(\App\Auth\AuthFactory::normalize([
-            'defaults_dir' => $this->dir . '/defaults', 'state_dir' => $this->dir . '/state', 'password_cost' => 4,
+            'password_cost' => 4,
         ]));
     }
 }

@@ -38,8 +38,6 @@ final class ImageImportTest extends TestCase
             images: new ImageStorage($this->root . '/public', $this->root . '/defaults'),
             config: [
                 'auth_enabled' => false,
-                'auth_state_dir' => $this->root . '/state-auth',
-                'auth_defaults_dir' => dirname(__DIR__) . '/defaults',
             ],
         );
     }

@@ -318,7 +318,7 @@ src/
   Application.php  wiring, routes, permission per route, base_url
   Config.php       loads defaults/config.php, config/config.php and caller overrides
   Config/          ConfigSchema (controls per setting), ConfigForm (validation), ConfigStore (difference-only writer)
-  constants.php    global filesystem constants (BASEDIR, CONFDIR, STATEDIR, ...)
+  constants.php    global filesystem constants (BASEDIR, CONFDIR, DEFAULTSDIR, STATEDIR, SESSIONSDIR, ...)
   Auth/            SecurityController, AuthenticatorDefault, AuthorizerDefault (+ Contract/), WebAuth, Csrf, LayeredStore
   Http/            Request, Response, JsonResponse, RedirectResponse, Router, Session, Cookie
   Controller/      AbstractController -> RecipeController, UploadController, PageController, AuthController, AdminController

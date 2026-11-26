@@ -32,6 +32,6 @@ interface AuthenticatorInterface
      */
     public function setAccount(string $accountId, ?array $account): void;
 
-    /** @throws \App\Auth\Exception\StorageFailed */
+    /** @throws \App\Exception\StorageFailed */
     public function saveAccounts(): void;
 }

@@ -24,10 +24,10 @@ final class ConfigTest extends TestCase
         $section = Config::section([
             'storage' => 'json',
             'auth_enabled' => false,
-            'auth_state_dir' => '/tmp/state',
+            'auth_remember_days' => 14,
         ], 'auth');
 
-        self::assertSame(['enabled' => false, 'state_dir' => '/tmp/state'], $section);
+        self::assertSame(['enabled' => false, 'remember_days' => 14], $section);
     }
 
     public function testShippedConfigurationIsFlat(): void

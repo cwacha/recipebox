@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Auth;
+namespace App\Config;
 
 /**
  * Records that ship with the application (defaults) plus local changes on top.

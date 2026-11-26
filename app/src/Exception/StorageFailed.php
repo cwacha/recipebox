@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Auth\Exception;
+namespace App\Exception;
 
 use RuntimeException;
 
-/** Account, role or token data could not be read or written. */
+/** Stored data could not be read or written. */
 final class StorageFailed extends RuntimeException
 {
 }

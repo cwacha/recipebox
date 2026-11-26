@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Auth;
 
-use App\Auth\Exception\StorageFailed;
-use App\Auth\JsonFile;
-use App\Auth\LayeredStore;
+use App\Config\JsonFile;
+use App\Config\LayeredStore;
+use App\Exception\StorageFailed;
 
 final class LayeredStoreTest extends AuthTestCase
 {

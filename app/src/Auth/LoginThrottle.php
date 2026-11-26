@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Auth;
 
+use App\Config\JsonFile;
+
 /** Slows down password guessing: too many failures for a key lock it for a while. */
 final class LoginThrottle
 {

@@ -37,9 +37,9 @@ interface AuthorizerInterface
      */
     public function setRolePermissions(string $roleId, ?array $permissions): void;
 
-    /** @throws \App\Auth\Exception\StorageFailed */
+    /** @throws \App\Exception\StorageFailed */
     public function saveAccess(): void;
 
-    /** @throws \App\Auth\Exception\StorageFailed */
+    /** @throws \App\Exception\StorageFailed */
     public function saveRoles(): void;
 }

@@ -22,8 +22,6 @@ final class SecurityControllerTest extends AuthTestCase
     {
         return AuthFactory::create(AuthFactory::normalize([
             'enabled' => $enabled,
-            'defaults_dir' => $this->dir . '/defaults',
-            'state_dir' => $this->dir . '/state',
             'password_cost' => 4,
         ]));
     }
@@ -137,8 +135,8 @@ final class SecurityControllerTest extends AuthTestCase
         $reloaded = $this->security();
         self::assertNull($reloaded->getAccount('ed'));
         self::assertSame(['locked'], $reloaded->accountsWithRole('editor'), 'only the other editor is left');
-        self::assertNull($this->localFile('accounts')['ed'], 'the built-in account is remembered as deleted');
-        self::assertNull($this->localFile('access')['ed'], 'and so is its role assignment');
+        self::assertArrayNotHasKey('ed', $this->appLocalFile('accounts'), 'the local account is removed');
+        self::assertArrayNotHasKey('ed', $this->appLocalFile('access'), 'and so is its role assignment');
     }
 
     public function testPasswordHelpers(): void
@@ -158,9 +156,8 @@ final class SecurityControllerTest extends AuthTestCase
 
     public function testTheDefaultAdministratorPasswordIsRecognised(): void
     {
+        $this->clearAppState();
         $security = AuthFactory::create(AuthFactory::normalize([
-            'defaults_dir' => dirname(__DIR__, 2) . '/defaults',
-            'state_dir' => $this->dir . '/state',
             'password_cost' => 4,
         ]));
 
@@ -172,7 +169,7 @@ final class SecurityControllerTest extends AuthTestCase
 
     public function testProvidersAreChosenFromARegistryOnly(): void
     {
-        $config = fn (array $extra): array => AuthFactory::normalize($extra + ['state_dir' => $this->dir . '/state', 'defaults_dir' => $this->dir . '/defaults']);
+        $config = fn (array $extra): array => AuthFactory::normalize($extra);
 
         try {
             AuthFactory::create($config(['authenticator' => '../../etc/passwd']));

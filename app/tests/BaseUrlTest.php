@@ -55,7 +55,6 @@ final class BaseUrlTest extends TestCase
     {
         return new Application($this->repo, config: $config + [
             'auth_enabled' => false,
-            'auth_state_dir' => $this->dir . '/auth',
         ]);
     }
 

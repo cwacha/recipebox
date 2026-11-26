@@ -45,12 +45,6 @@ return [
     'auth_authenticator' => 'default',
     'auth_authorizer' => 'default',
 
-    // Built-in accounts/roles/access ship in defaults/, local changes are stored as differences in var/state/.
-    // null = derived from the fixed application paths.
-    'auth_defaults_dir' => null,
-    'auth_state_dir' => null,
-    'auth_sessions_dir' => null,
-
     'auth_session_name' => 'recipebox_session',
     'auth_remember_cookie' => 'recipebox_remember',
     'auth_remember_days' => 30,

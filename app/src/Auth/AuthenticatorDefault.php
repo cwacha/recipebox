@@ -7,6 +7,7 @@ namespace App\Auth;
 use App\Auth\Contract\AuthenticatorInterface;
 use App\Auth\Contract\PersistentLoginInterface;
 use App\Auth\Exception\ValidationFailed;
+use App\Config\LayeredStore;
 
 /**
  * Accounts from built-in defaults plus local changes. Passwords are only stored as hashes (password API);

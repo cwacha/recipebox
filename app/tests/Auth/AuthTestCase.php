@@ -6,9 +6,9 @@ namespace Tests\Auth;
 
 use App\Auth\AuthenticatorDefault;
 use App\Auth\AuthorizerDefault;
-use App\Auth\JsonFile;
-use App\Auth\LayeredStore;
 use App\Auth\TokenStore;
+use App\Config\JsonFile;
+use App\Config\LayeredStore;
 use PHPUnit\Framework\TestCase;
 
 /** Gives every test its own temporary "defaults" and "state" directory. */
@@ -16,15 +16,20 @@ abstract class AuthTestCase extends TestCase
 {
     protected string $dir;
 
+    /** @var array<string, string|false> original contents of the application's auth state files */
+    private array $appStateBackup = [];
+
     protected function setUp(): void
     {
         $this->dir = sys_get_temp_dir() . '/recipes-auth-test-' . bin2hex(random_bytes(4));
         mkdir($this->dir . '/defaults', 0775, true);
         mkdir($this->dir . '/state', 0775, true);
+        mkdir($this->dir . '/sessions', 0775, true);
     }
 
     protected function tearDown(): void
     {
+        $this->restoreAppState();
         $this->remove($this->dir);
     }
 
@@ -37,19 +42,88 @@ abstract class AuthTestCase extends TestCase
     /**
      * Accounts and the access table used by the tests (roles are the real ones from defaults/roles.json):
      * admin (all), ed (editor), rd (reader), guest (reader, cannot sign in), locked (editor, cannot sign in).
+     * The application's state directory is used for the real authentication stack; the temporary defaults
+     * directory is filled as well for unit tests that build their own stores.
      */
     protected function writeStandardDefaults(): void
     {
+        $this->clearAppState();
         $account = fn (string $password, string $name): array => ['password' => $password === '!' ? '!' : $this->hash($password), 'fullname' => $name, 'email' => ''];
-        $this->writeDefaults('accounts', [
+        $accounts = [
             'admin' => $account('adminpass1', 'Administrator'),
             'ed' => $account('editorpass1', 'Edna Editor'),
             'rd' => $account('readerpass1', 'Rudi Reader'),
             'guest' => $account('!', 'Guest'),
             'locked' => $account('!', 'Locked Out'),
-        ]);
-        $this->writeDefaults('access', ['admin' => 'all', 'ed' => 'editor', 'rd' => 'reader', 'guest' => 'reader', 'locked' => 'editor']);
-        copy(dirname(__DIR__, 2) . '/defaults/roles.json', $this->dir . '/defaults/roles.json');
+        ];
+        $access = ['admin' => 'all', 'ed' => 'editor', 'rd' => 'reader', 'guest' => 'reader', 'locked' => 'editor'];
+
+        // Unit tests that build their own stores still use the temporary defaults directory.
+        $this->writeDefaults('accounts', $accounts);
+        $this->writeDefaults('access', $access);
+
+        // The application reads the real defaults and only the local changes in the application's state directory.
+        $this->writeAppLocal('accounts', $accounts);
+        unset($access['admin'], $access['guest']);
+        $this->writeAppLocal('access', $access);
+    }
+
+    protected function clearAppState(): void
+    {
+        $this->backupAppState();
+        foreach (array_keys($this->appStateBackup) as $path) {
+            $this->removeStateFile($path);
+        }
+    }
+
+    /** @param array<string, mixed> $data */
+    protected function writeAppLocal(string $name, array $data): void
+    {
+        $this->backupAppState();
+        if (!is_dir(STATEDIR)) {
+            mkdir(STATEDIR, 0775, true);
+        }
+        file_put_contents(STATEDIR . '/' . $name . '.json', json_encode($data));
+    }
+
+    /** @return array<string, mixed> */
+    protected function appLocalFile(string $name): array
+    {
+        $path = STATEDIR . '/' . $name . '.json';
+        if (!is_file($path)) {
+            return [];
+        }
+
+        return (array) json_decode((string) file_get_contents($path), true);
+    }
+
+    private function backupAppState(): void
+    {
+        if ($this->appStateBackup !== []) {
+            return;
+        }
+
+        foreach (['accounts', 'access', 'roles', 'auth_tokens', 'login_attempts'] as $name) {
+            $path = STATEDIR . '/' . $name . '.json';
+            $this->appStateBackup[$path] = is_file($path) ? (string) file_get_contents($path) : false;
+        }
+    }
+
+    private function restoreAppState(): void
+    {
+        foreach ($this->appStateBackup as $path => $contents) {
+            $this->removeStateFile($path);
+            if ($contents !== false) {
+                file_put_contents($path, $contents);
+            }
+        }
+        $this->appStateBackup = [];
+    }
+
+    private function removeStateFile(string $path): void
+    {
+        @unlink($path);
+        @unlink($path . '.lock');
     }
 
     protected function store(string $name): LayeredStore

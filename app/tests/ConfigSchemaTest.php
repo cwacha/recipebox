@@ -56,11 +56,11 @@ final class ConfigSchemaTest extends TestCase
 
     public function testSettingsAreGroupedByTheirPrefix(): void
     {
-        $groups = ConfigSchema::groups(['storage', 'llm_endpoint', 'auth_enabled', 'auth_state_dir']);
+        $groups = ConfigSchema::groups(['storage', 'llm_endpoint', 'auth_enabled', 'auth_lockout_seconds']);
 
         self::assertSame(['', 'auth_', 'llm_'], array_column($groups, 'prefix'));
         self::assertSame(['storage'], $groups[0]['keys']);
-        self::assertSame(['auth_enabled', 'auth_state_dir'], $groups[1]['keys']);
+        self::assertSame(['auth_enabled', 'auth_lockout_seconds'], $groups[1]['keys']);
         self::assertSame(['llm_endpoint'], $groups[2]['keys']);
     }
 }

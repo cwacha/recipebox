@@ -37,8 +37,6 @@ abstract class AuthWebTestCase extends AuthTestCase
     protected function app(array $auth = []): Application
     {
         $config = [
-            'auth_defaults_dir' => $this->dir . '/defaults',
-            'auth_state_dir' => $this->dir . '/state',
             'auth_password_cost' => 4,
         ];
         foreach ($auth as $key => $value) {

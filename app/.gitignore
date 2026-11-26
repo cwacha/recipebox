@@ -1,16 +1,15 @@
 /vendor/
 
 /config/*
-!/config/.gitkeep
-
-/var/sessions/
-/var/state/*
-!/var/state/.gitkeep
-
 /public/images/*
-!/public/images/.gitkeep
 /public/uploads/*
-!/public/uploads/.htaccess
+/var/sessions/*
+/var/state/*
 
 .phpunit.cache/
 .phpunit.result.cache
+
+# ...but re-include all .gitkeep, .gitignore and .htaccess files everywhere
+!**/.htaccess
+!**/.gitkeep
+!**/.gitignore

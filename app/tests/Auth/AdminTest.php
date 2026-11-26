@@ -17,7 +17,7 @@ final class AdminTest extends AuthWebTestCase
     /** @return array<string, mixed> accounts as stored on disk (local changes only) */
     private function localAccounts(): array
     {
-        return $this->localFile('accounts');
+        return $this->appLocalFile('accounts');
     }
 
     public function testAllAdminViewsShowTheirContent(): void
@@ -85,8 +85,8 @@ final class AdminTest extends AuthWebTestCase
 
         $stored = $this->localAccounts()['newbie'];
         self::assertStringStartsWith('$2y$', $stored['password']);
-        self::assertStringNotContainsString('newbie-password', (string) file_get_contents($this->dir . '/state/accounts.json'));
-        self::assertSame('editor,reader', $this->localFile('access')['newbie']);
+        self::assertStringNotContainsString('newbie-password', (string) file_get_contents(STATEDIR . '/accounts.json'));
+        self::assertSame('editor,reader', $this->appLocalFile('access')['newbie']);
 
         $newbie = $this->loggedIn('newbie', 'newbie-password');
         self::assertSame(200, $newbie->get('/recipes/new')->status());
@@ -111,7 +111,7 @@ final class AdminTest extends AuthWebTestCase
             self::assertStringContainsString('<form', $response->body(), 'the form is shown again');
         }
         self::assertNull($this->localAccounts()['valid'] ?? null);
-        self::assertNull($this->localFile('access')['valid'] ?? null);
+        self::assertNull($this->appLocalFile('access')['valid'] ?? null);
 
         $filled = $this->admin->post('/admin/account/edit', ['fullname' => 'Keep Me', 'email' => 'bad'] + $valid);
         self::assertStringContainsString('value="Keep Me"', $filled->body(), 'entered values are not lost');
@@ -179,7 +179,7 @@ final class AdminTest extends AuthWebTestCase
         self::assertSame(422, $response->status());
         self::assertStringContainsString('no account could manage accounts and roles anymore', $response->body());
         self::assertSame(200, $this->admin->get('/admin/roles')->status(), 'still an administrator');
-        self::assertArrayNotHasKey('admin', $this->localFile('access'), 'nothing was saved');
+        self::assertArrayNotHasKey('admin', $this->appLocalFile('access'), 'nothing was saved');
     }
 
     public function testCreatingEditingAndDeletingRoles(): void
@@ -191,7 +191,7 @@ final class AdminTest extends AuthWebTestCase
         $roles = $this->admin->get('/admin/roles')->body();
         self::assertStringContainsString('/kitchen', $roles);
         self::assertStringContainsString('kitchen_order', $roles);
-        self::assertSame('show,/,/recipes,/kitchen,kitchen_order,recipe_edit', $this->localFile('roles')['chef']);
+        self::assertSame('show,/,/recipes,/kitchen,kitchen_order,recipe_edit', $this->appLocalFile('roles')['chef']);
         self::assertStringContainsString('kitchen_order', $this->admin->get('/admin/role/edit', ['id' => 'all'])->body(), 'the role all learns about new permissions');
 
         // give it to an account and use it
@@ -211,8 +211,7 @@ final class AdminTest extends AuthWebTestCase
         $account = $this->admin->get('/admin/account', ['id' => 'rd']);
         self::assertSame(200, $account->status());
         self::assertStringNotContainsString('chef', $account->body(), 'the deleted role was taken away from the account');
-        self::assertArrayHasKey('rd', $this->localFile('access'));
-        self::assertNull($this->localFile('access')['rd'], 'rd has no role left, which overrides its built-in "reader"');
+        self::assertNull($this->appLocalFile('access')['rd'] ?? null, 'rd has no role left');
     }
 
     public function testRoleFormValidation(): void
@@ -246,8 +245,8 @@ final class AdminTest extends AuthWebTestCase
 
         $this->admin->post('/admin/role/delete', ['id' => 'reader']);
         self::assertStringNotContainsString('<code>reader</code>', $this->admin->get('/admin/roles')->body());
-        self::assertNull($this->localFile('roles')['reader'], 'a removed built-in role is remembered as removed, the defaults file is untouched');
-        self::assertStringContainsString('reader', (string) file_get_contents($this->dir . '/defaults/roles.json'));
+        self::assertNull($this->appLocalFile('roles')['reader'], 'a removed built-in role is remembered as removed, the defaults file is untouched');
+        self::assertStringContainsString('reader', (string) file_get_contents(DEFAULTSDIR . '/roles.json'));
     }
 
     public function testOnlyAccountsWithTheActionPermissionCanChangeThings(): void

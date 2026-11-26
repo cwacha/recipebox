@@ -18,7 +18,7 @@ final class Config
      */
     public static function load(array $overrides = []): array
     {
-        $defaultsFile = BASEDIR . '/defaults/config.php';
+        $defaultsFile = DEFAULTSDIR . '/config.php';
         if (!is_file($defaultsFile)) {
             throw new RuntimeException('Missing default configuration: ' . $defaultsFile);
         }

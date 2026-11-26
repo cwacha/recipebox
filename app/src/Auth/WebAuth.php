@@ -124,7 +124,7 @@ final class WebAuth
     {
         return [
             'name' => $this->config['session_name'],
-            'save_path' => $this->config['sessions_dir'],
+            'save_path' => SESSIONSDIR,
             'path' => $request->basePath === '' ? '/' : $request->basePath,
             'secure' => $this->secure($request),
             'samesite' => $this->config['cookie_samesite'],

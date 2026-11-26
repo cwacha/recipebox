@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Auth;
 
+use App\Config\JsonFile;
+
 /**
  * Persistent-login ("remember me") tokens. The cookie holds "selector.validator"; only a SHA-256 hash of the
  * validator is stored, so neither the file nor the cookie ever contains a password. Tokens expire and can be revoked.

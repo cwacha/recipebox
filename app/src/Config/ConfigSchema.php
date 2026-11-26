@@ -101,21 +101,6 @@ final class ConfigSchema
             '_label' => 'Authorizer provider',
             '_description' => 'Name of a provider registered in code. The shipped provider is "default".',
         ],
-        'auth_defaults_dir' => [
-            'string', '_nullable' => true,
-            '_label' => 'Defaults directory',
-            '_description' => 'Where the built-in accounts, roles and access table are read. Automatic uses defaults/.',
-        ],
-        'auth_state_dir' => [
-            'string', '_nullable' => true,
-            '_label' => 'State directory',
-            '_description' => 'Where local account, role and access changes are stored. Automatic uses var/state/.',
-        ],
-        'auth_sessions_dir' => [
-            'string', '_nullable' => true,
-            '_label' => 'Sessions directory',
-            '_description' => 'Where PHP stores its session files. Automatic uses var/sessions/.',
-        ],
         'auth_session_name' => [
             'string',
             '_label' => 'Session cookie name',

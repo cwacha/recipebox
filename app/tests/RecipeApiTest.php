@@ -19,7 +19,7 @@ final class RecipeApiTest extends TestCase
         $this->dir = sys_get_temp_dir() . '/recipes-test-' . bin2hex(random_bytes(4));
         $this->app = new Application(
             new JsonFileRecipeRepository($this->dir . '/recipes.json'),
-            config: ['auth_enabled' => false, 'auth_state_dir' => $this->dir . '/auth'],
+            config: ['auth_enabled' => false],
         );
     }
 

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Auth;
+namespace App\Config;
 
-use App\Auth\Exception\StorageFailed;
+use App\Exception\StorageFailed;
 use JsonException;
 
 /** A JSON object stored in a file. Changes are applied under an exclusive lock and written atomically (mode 0600). */

@@ -34,6 +34,9 @@ final class AdminConfigTest extends AuthWebTestCase
         self::assertStringContainsString('config[base_url]', $body);
         self::assertStringContainsString('config[storage]', $body);
         self::assertStringContainsString('config[llm_prompt]', $body);
+        self::assertStringNotContainsString('config[auth_defaults_dir]', $body);
+        self::assertStringNotContainsString('config[auth_state_dir]', $body);
+        self::assertStringNotContainsString('config[auth_sessions_dir]', $body);
         self::assertStringContainsString('config[auth_cookie_secure]', $body);
         self::assertStringContainsString('General', $body);
         self::assertStringContainsString('Import from a URL (AI)', $body);
@@ -109,13 +112,6 @@ final class AdminConfigTest extends AuthWebTestCase
         self::assertSame(422, $invalidChoice->status());
         self::assertStringContainsString('allowed values', $invalidChoice->body());
 
-        $emptyDirectory = $this->admin->post('/admin/config', ['config' => [
-            'auth_state_dir' => '',
-            'auth_state_dir__null' => '0',
-        ]]);
-        self::assertSame(422, $emptyDirectory->status());
-        self::assertStringContainsString('automatic value', $emptyDirectory->body());
-
         $emptyBaseUrl = $this->admin->post('/admin/config', ['config' => [
             'base_url' => '',
             'base_url__null' => '0',
@@ -163,8 +159,6 @@ final class AdminConfigTest extends AuthWebTestCase
             'llm_timeout' => '42',
             'llm_prompt' => "Line one\nLine two",
             'auth_cookie_secure' => 'false',
-            'auth_defaults_dir' => '/srv/defaults',
-            'auth_defaults_dir__null' => '0',
         ]]);
 
         self::assertSame(303, $response->status());
@@ -173,7 +167,6 @@ final class AdminConfigTest extends AuthWebTestCase
         self::assertSame(42, $local['llm_timeout']);
         self::assertSame("Line one\nLine two", $local['llm_prompt']);
         self::assertFalse($local['auth_cookie_secure']);
-        self::assertSame('/srv/defaults', $local['auth_defaults_dir']);
 
         // The generated file must be valid PHP with the same values.
         self::assertStringContainsString("'llm_timeout' => 42", (string) file_get_contents($this->localConfig));

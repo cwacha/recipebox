@@ -192,8 +192,6 @@ final class UrlImportTest extends TestCase
     {
         $config = [
             'auth_enabled' => false,
-            'auth_state_dir' => $this->dir . '/auth',
-            'auth_defaults_dir' => dirname(__DIR__) . '/defaults',
         ];
         foreach ($llm as $key => $value) {
             $config['llm_' . $key] = $value;

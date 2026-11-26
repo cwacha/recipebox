@@ -7,11 +7,11 @@ namespace App;
 use App\Auth\AuthFactory;
 use App\Auth\Csrf;
 use App\Auth\Identity;
-use App\Auth\JsonFile;
 use App\Auth\LoginThrottle;
 use App\Auth\SecurityController;
 use App\Auth\WebAuth;
 use App\Config\ConfigStore;
+use App\Config\JsonFile;
 use App\Controller\AdminController;
 use App\Controller\AuthController;
 use App\Controller\PageController;
@@ -76,7 +76,7 @@ final class Application
         $this->security = AuthFactory::create($this->config['auth']);
         $this->webAuth = new WebAuth(
             $this->security,
-            new LoginThrottle(new JsonFile($this->config['auth']['state_dir'] . '/login_attempts.json'), (int) $this->config['auth']['lockout_seconds']),
+            new LoginThrottle(new JsonFile(STATEDIR . '/login_attempts.json'), (int) $this->config['auth']['lockout_seconds']),
             $this->config['auth'],
         );
         $this->csrf = new Csrf();
@@ -287,7 +287,7 @@ final class Application
             $this->security,
             $this->webAuth,
             $templates,
-            $this->configStore ?? new ConfigStore(BASEDIR . '/defaults/config.php', CONFDIR . '/config.php'),
+            $this->configStore ?? new ConfigStore(DEFAULTSDIR . '/config.php', CONFDIR . '/config.php'),
         );
 
         // The last argument is what the account needs for the route: a view (starts with "/") or an action.

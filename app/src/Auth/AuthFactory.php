@@ -6,6 +6,8 @@ namespace App\Auth;
 
 use App\Auth\Contract\AuthenticatorInterface;
 use App\Auth\Contract\AuthorizerInterface;
+use App\Config\JsonFile;
+use App\Config\LayeredStore;
 use InvalidArgumentException;
 
 /**
@@ -17,7 +19,7 @@ final class AuthFactory
 {
     /**
      * @param  array<string, mixed> $config the "auth_*" settings without their prefix
-     * @return array<string, mixed> with all defaults filled in
+     * @return array<string, mixed> with all configuration defaults filled in
      */
     public static function normalize(array $config): array
     {
@@ -26,9 +28,6 @@ final class AuthFactory
             'guest_account' => 'guest',
             'authenticator' => 'default',
             'authorizer' => 'default',
-            'defaults_dir' => null,
-            'state_dir' => null,
-            'sessions_dir' => null,
             'session_name' => 'recipebox_session',
             'remember_cookie' => 'recipebox_remember',
             'remember_days' => 30,
@@ -39,9 +38,6 @@ final class AuthFactory
             'max_login_attempts' => 5,
             'lockout_seconds' => 900,
         ];
-        $config['defaults_dir'] ??= BASEDIR . '/defaults';
-        $config['state_dir'] ??= STATEDIR;
-        $config['sessions_dir'] ??= BASEDIR . '/var/sessions';
 
         return $config;
     }
@@ -67,9 +63,9 @@ final class AuthFactory
         $guest = (string) ($config['guest_account'] ?? '');
 
         return new AuthenticatorDefault(
-            self::store($config, 'accounts'),
+            self::store('accounts'),
             $guest === '' ? null : $guest,
-            new TokenStore(new JsonFile($config['state_dir'] . '/auth_tokens.json')),
+            new TokenStore(new JsonFile(STATEDIR . '/auth_tokens.json')),
             (int) $config['min_password_length'],
             $config['password_cost'] === null ? null : (int) $config['password_cost'],
         );
@@ -78,15 +74,14 @@ final class AuthFactory
     /** @param array<string, mixed> $config */
     private static function defaultAuthorizer(array $config): AuthorizerDefault
     {
-        return new AuthorizerDefault(self::store($config, 'roles'), self::store($config, 'access'));
+        return new AuthorizerDefault(self::store('roles'), self::store('access'));
     }
 
-    /** @param array<string, mixed> $config */
-    private static function store(array $config, string $name): LayeredStore
+    private static function store(string $name): LayeredStore
     {
         return new LayeredStore(
-            new JsonFile($config['defaults_dir'] . '/' . $name . '.json'),
-            new JsonFile($config['state_dir'] . '/' . $name . '.json'),
+            new JsonFile(DEFAULTSDIR . '/' . $name . '.json'),
+            new JsonFile(STATEDIR . '/' . $name . '.json'),
         );
     }
 

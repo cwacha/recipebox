@@ -6,6 +6,7 @@ namespace App\Auth;
 
 use App\Auth\Contract\AuthorizerInterface;
 use App\Auth\Exception\ValidationFailed;
+use App\Config\LayeredStore;
 
 /**
  * Roles (role ID => permissions) and the access table (account ID => role IDs), each as built-in defaults plus
