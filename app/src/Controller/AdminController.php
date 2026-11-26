@@ -42,7 +42,8 @@ final class AdminController extends AbstractController
             'signInCount' => count(array_filter($accounts, static fn (array $a): bool => $a['can_sign_in'])),
             'roleCount' => count($roles),
             'permissionCount' => count($this->security->knownPermissions()),
-            'defaultPassword' => $this->security->usesDefaultPassword('admin'),
+            // Without authentication a password has no effect, so do not nag about the shipped default.
+            'defaultPassword' => $this->security->isEnabled() && $this->security->usesDefaultPassword('admin'),
         ], 'Administration');
     }
 

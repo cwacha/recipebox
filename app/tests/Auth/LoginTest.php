@@ -181,6 +181,7 @@ final class LoginTest extends AuthWebTestCase
         $open = $this->browser(app: $this->app(['enabled' => false]));
 
         self::assertSame(200, $open->get('/admin')->status());
+        self::assertStringNotContainsString('still uses the default password', $open->get('/admin')->body());
         self::assertSame(200, $open->get('/recipes/new')->status());
         self::assertSame(302, $open->get('/login')->status());
         self::assertStringNotContainsString('Sign in', $open->get('/')->body());
