@@ -199,11 +199,8 @@
     }
 
     function handleEvent(event, url) {
-        if (event.event === 'step') {
-            showStep(event.step);
-            return false;
-        }
         if (event.event === 'done' && event.recipe) {
+            showStep('parse'); // the "ask" step is done; reading the answer is quick
             pendingRecipe = event.recipe;
             endProgress('done');
             renderPreview(event.recipe, event.url || url);
@@ -216,10 +213,13 @@
             failImport(errors && errors.length ? errors : [String(event.message || 'The import failed.')]);
             return true;
         }
-        return false;
+        return false; // "ping" keeps the connection alive while the model works
     }
 
-    /** Reads the newline delimited JSON events of the server as they arrive. */
+    /**
+     * Reads the newline delimited JSON events of the server. Only the last event matters ("done" or "error");
+     * "ping" events keep the connection open while the model works, so a cancel can be noticed by the server.
+     */
     function readEvents(response, url) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -312,45 +312,77 @@
 
         beginProgress();
         setFetchButton(true);
+        showStep('check');
+        showStep('download');
+
         const request = new AbortController();
         controller = request;
 
-        fetch(R.base + '/api/recipes/import/url?stream=1', {
+        // The page is downloaded in its own request: it is quick, so this step is ticked off before the slow
+        // model call starts. A buffering proxy on the web host would hold back progress events of a single
+        // request until everything is finished.
+        postJson('/api/recipes/import/url/page', {url: url}, request.signal)
+            .then(function (page) {
+                showStep('ask');
+                return readEventsFrom('/api/recipes/import/url/extract', {token: page.token}, request.signal, url);
+            })
+            .catch(function (problem) {
+                if (problem && problem.name === 'AbortError') {
+                    return; // the user cancelled, cancelImport() has already reported that
+                }
+                const messages = problem && Array.isArray(problem.messages) && problem.messages.length
+                    ? problem.messages
+                    : ['No answer from the server. It may still be busy – please try again.'];
+                failImport(messages);
+            })
+            .finally(function () {
+                if (controller === request) {
+                    controller = null;
+                    setFetchButton(false);
+                }
+            });
+    });
+
+    /** POSTs JSON and resolves with the parsed answer; a non-2xx answer becomes an error with the server's message. */
+    function postJson(path, body, signal) {
+        return post(path, body, signal, 'application/json').then(function (response) {
+            if (!response.ok) {
+                return response.json().catch(function () { return {}; }).then(function (json) {
+                    throw {messages: R.errorMessages({status: response.status, responseJSON: json})};
+                });
+            }
+
+            return response.json();
+        });
+    }
+
+    /** POSTs JSON and consumes the streamed events of the answer. */
+    function readEventsFrom(path, body, signal, url) {
+        return post(path, body, signal, 'application/x-ndjson').then(function (response) {
+            if (!response.ok) {
+                return response.json().catch(function () { return {}; }).then(function (json) {
+                    throw {messages: R.errorMessages({status: response.status, responseJSON: json})};
+                });
+            }
+
+            return readEvents(response, url);
+        });
+    }
+
+    function post(path, body, signal, accept) {
+        return fetch(R.base + path, {
             method: 'POST',
             credentials: 'same-origin',
-            signal: request.signal,
+            signal: signal,
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/x-ndjson',
+                'Accept': accept,
                 'X-CSRF-Token': CSRF,
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: JSON.stringify({url: url})
-        }).then(function (response) {
-            if (!response.ok) {
-                return response.json().catch(function () { return {}; }).then(function (json) {
-                    throw {messages: R.errorMessages({status: response.status, responseJSON: json}), step: 'check'};
-                });
-            }
-            return readEvents(response, url);
-        }).catch(function (problem) {
-            if (problem && problem.name === 'AbortError') {
-                return; // the user cancelled, cancelImport() has already reported that
-            }
-            if (problem && problem.step) {
-                showStep(problem.step); // e.g. the server refused the address
-            }
-            const messages = problem && Array.isArray(problem.messages) && problem.messages.length
-                ? problem.messages
-                : ['No answer from the server. It may still be busy – please try again.'];
-            failImport(messages);
-        }).finally(function () {
-            if (controller === request) {
-                controller = null;
-                setFetchButton(false);
-            }
+            body: JSON.stringify(body)
         });
-    });
+    }
 
     $('#btnDiscardPreview').on('click', function () {
         pendingRecipe = null;

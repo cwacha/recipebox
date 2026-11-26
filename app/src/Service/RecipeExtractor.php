@@ -6,12 +6,18 @@ namespace App\Service;
 
 use App\Exception\ValidationException;
 
-/** Turns a web page URL into validated recipe data without saving anything. */
+/** Turns a web page into validated recipe data without saving anything. */
 interface RecipeExtractor
 {
     /**
-     * @param callable(string): void|null $onStep    called with "download", "ask" and "parse" whenever that step starts
-     * @param callable(): bool|null       $cancelled asked while the model is working; true stops the request
+     * Downloads the page, so its HTML can be handed to the model in a later request.
+     *
+     * @throws RecipeImportException when the page cannot be downloaded
+     */
+    public function fetch(string $url): string;
+
+    /**
+     * @param callable(): bool|null $cancelled asked while the model is working; true stops the request
      *
      * @return array{title: string, description: string, category: string, image: string, cooking_time: int, ingredients: list<array{quantity: string, name: string}>, steps: list<string>, tags: list<string>}
      *
@@ -19,5 +25,5 @@ interface RecipeExtractor
      *                               answer with a recipe
      * @throws ValidationException   when the answer is not a complete recipe
      */
-    public function extract(string $url, ?callable $onStep = null, ?callable $cancelled = null): array;
+    public function extract(string $html, string $url, ?callable $cancelled = null): array;
 }

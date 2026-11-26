@@ -7,8 +7,12 @@ namespace App\Service;
 use App\Validation\RecipeValidator;
 
 /**
- * Downloads the page itself and asks an LLM to turn it into one recipe. The prompt may contain {html} and {url};
+ * Downloads a web page and asks an LLM to turn its HTML into one recipe. The prompt may contain {html} and {url};
  * the HTML is inserted there, or appended to the prompt when {html} is missing.
+ *
+ * The two halves are separate methods because the import page downloads the page in one request and asks the
+ * model in the next: slow model calls behind a buffering proxy cannot report progress, so the browser needs a
+ * point where it knows the download is done.
  */
 final class LlmRecipeExtractor implements RecipeExtractor
 {
@@ -39,15 +43,14 @@ PROMPT;
     ) {
     }
 
-    public function extract(string $url, ?callable $onStep = null, ?callable $cancelled = null): array
+    public function fetch(string $url): string
     {
-        $onStep ??= static function (string $step): void {
-        };
+        return $this->fetcher->fetch($url);
+    }
 
+    public function extract(string $html, string $url, ?callable $cancelled = null): array
+    {
         $prompt = trim($this->prompt) === '' ? self::DEFAULT_PROMPT : $this->prompt;
-
-        $onStep('download');
-        $html = $this->fetcher->fetch($url);
 
         // {url} is replaced first so that nothing inside the HTML can be taken for a placeholder
         $request = str_replace('{url}', $url, $prompt);
@@ -55,10 +58,7 @@ PROMPT;
             ? str_replace('{html}', $html, $request)
             : $request . "\n\nThe web page HTML follows:\n" . $html;
 
-        $onStep('ask');
         $answer = $this->client->complete($request, $cancelled);
-
-        $onStep('parse');
 
         return $this->validator->validate($this->decode($answer));
     }

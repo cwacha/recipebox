@@ -98,6 +98,14 @@ final class Session
         }
     }
 
+    /** Writes the session and releases its lock, so a long request does not block other requests of this browser. */
+    public function close(): void
+    {
+        if ($this->native && $this->started && session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+    }
+
     public function flash(string $type, string $message): void
     {
         $messages = $this->get('flash', []);

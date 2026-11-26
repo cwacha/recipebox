@@ -234,10 +234,14 @@ as a preview. **Nothing is stored during the preview:** after confirming, the br
 `POST /api/recipes/import`, so pictures are downloaded and saved exactly like a normal import. Discarding simply hides
 the preview. The feature needs the `recipe_import` permission.
 
-The import page requests the extraction with `?stream=1`: the server sends one NDJSON event per step as soon as it
-starts (`check`, `download`, `ask`, `parse`), so the page shows which step is running, how long each step took, and a
-timer with the total time. While the import runs, the button turns into **Cancel**: cancelling closes the connection,
-and the server notices it (a `ping` event is written while the model works) and aborts the request to the model.
+The import page splits the work into two requests: `POST /api/recipes/import/url/page` downloads the page and
+keeps it in the session, then `POST /api/recipes/import/url/extract` asks the model. That way the page can tick off
+the download before the slow model call starts — a web host that buffers responses (so nothing arrives until the
+request has finished) would otherwise hide every progress event. The page times the four steps itself (`check`,
+`download`, `ask`, `parse`) and shows a running total. While the import runs, the button turns into **Cancel**:
+cancelling closes the connection, and the server notices it (a `ping` event is written while the model works) and
+aborts the request to the model. The extract endpoint sends NDJSON so those pings can be written; only its final
+event matters to the page.
 
 The API key stays on the server, and redirects from the LLM endpoint are not followed so the key cannot be forwarded
 to another host.
@@ -372,6 +376,8 @@ Use HTTP Basic, or a session with the `X-CSRF-Token` header.
 | POST | `/api/recipes` | create |
 | GET / PUT / DELETE | `/api/recipes/{id}` | read / update / delete (the API uses the internal id) |
 | POST | `/api/recipes/import` | bulk import; response includes `warnings` |
-| POST | `/api/recipes/import/url` | LLM preview for `{"url": "https://…"}`; nothing is saved. With `?stream=1` the steps (`check`, `download`, `ask`, `parse`) and the result are sent as NDJSON events while the work runs |
+| POST | `/api/recipes/import/url` | LLM preview for `{"url": "https://…"}` in one request; nothing is saved |
+| POST | `/api/recipes/import/url/page` | downloads the page and keeps it for the next call; returns `{"token": "…", "url": "…", "bytes": 1234}` |
+| POST | `/api/recipes/import/url/extract` | asks the model about the page of a token; NDJSON events (`ping`, `done`, `error`), nothing is saved |
 | GET | `/api/recipes/export`, `/api/recipes/{id}/export` | JSON download |
 | POST | `/api/uploads` | multipart image upload (`image`) → `{"path": "uploads/…"}` |

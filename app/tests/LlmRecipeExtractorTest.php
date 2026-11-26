@@ -22,7 +22,8 @@ final class LlmRecipeExtractorTest extends TestCase
         $fetcher = new FakePageFetcher(self::HTML);
         $extractor = new LlmRecipeExtractor($client, $fetcher, new RecipeValidator());
 
-        $recipe = $extractor->extract('https://example.com/tomato-soup');
+        $html = $extractor->fetch('https://example.com/tomato-soup');
+        $recipe = $extractor->extract($html, 'https://example.com/tomato-soup');
 
         self::assertSame('Tomato Soup', $recipe['title']);
         self::assertSame(25, $recipe['cooking_time']);
@@ -41,7 +42,7 @@ final class LlmRecipeExtractorTest extends TestCase
         $client = new FakeLlmClient(json_encode(['recipes' => [$this->recipe()]]));
         $extractor = new LlmRecipeExtractor($client, new FakePageFetcher(self::HTML), new RecipeValidator());
 
-        self::assertSame('Tomato Soup', $extractor->extract('https://example.com/soup')['title']);
+        self::assertSame('Tomato Soup', $extractor->extract(self::HTML, 'https://example.com/soup')['title']);
     }
 
     public function testACustomPromptMayPlaceHtmlAndUrlItself(): void
@@ -54,7 +55,7 @@ final class LlmRecipeExtractorTest extends TestCase
             'Extract the recipe from {url} and answer with JSON. Page: {html}',
         );
 
-        $extractor->extract('https://example.com/cake');
+        $extractor->extract(self::HTML, 'https://example.com/cake');
 
         self::assertSame('Extract the recipe from https://example.com/cake and answer with JSON. Page: ' . self::HTML, $client->prompts[0]);
     }
@@ -64,7 +65,7 @@ final class LlmRecipeExtractorTest extends TestCase
         $client = new FakeLlmClient(json_encode($this->recipe()));
         $extractor = new LlmRecipeExtractor($client, new FakePageFetcher(self::HTML), new RecipeValidator(), 'Extract a recipe.');
 
-        $extractor->extract('https://example.com/cake');
+        $extractor->extract(self::HTML, 'https://example.com/cake');
 
         self::assertSame("Extract a recipe.\n\nThe web page HTML follows:\n" . self::HTML, $client->prompts[0]);
     }
@@ -77,7 +78,7 @@ final class LlmRecipeExtractorTest extends TestCase
         $extractor = new LlmRecipeExtractor($client, $fetcher, new RecipeValidator());
 
         try {
-            $extractor->extract('https://example.com/missing');
+            $extractor->fetch('https://example.com/missing');
             self::fail('the failure should be reported');
         } catch (RecipeImportException $e) {
             self::assertStringContainsString('HTTP 404', $e->getMessage());
@@ -86,18 +87,15 @@ final class LlmRecipeExtractorTest extends TestCase
         self::assertSame([], $client->prompts, 'the model is not asked without a page');
     }
 
-    public function testReportsTheStepsInOrder(): void
+    public function testFetchOnlyDownloadsThePage(): void
     {
         $client = new FakeLlmClient(json_encode($this->recipe()));
-        $extractor = new LlmRecipeExtractor($client, new FakePageFetcher(self::HTML), new RecipeValidator());
-        $steps = [];
+        $fetcher = new FakePageFetcher(self::HTML);
+        $extractor = new LlmRecipeExtractor($client, $fetcher, new RecipeValidator());
 
-        $extractor->extract('https://example.com/soup', static function (string $step) use (&$steps): void {
-            $steps[] = $step;
-        });
-
-        self::assertSame(['download', 'ask', 'parse'], $steps);
-        self::assertCount(1, $client->prompts, 'the model is asked once, after the download');
+        self::assertSame(self::HTML, $extractor->fetch('https://example.com/soup'));
+        self::assertSame(['https://example.com/soup'], $fetcher->urls);
+        self::assertSame([], $client->prompts, 'downloading does not ask the model');
     }
 
     public function testTheCancellationCheckIsPassedToTheClient(): void
@@ -106,7 +104,7 @@ final class LlmRecipeExtractorTest extends TestCase
         $extractor = new LlmRecipeExtractor($client, new FakePageFetcher(self::HTML), new RecipeValidator());
         $cancelled = static fn (): bool => true;
 
-        $extractor->extract('https://example.com/soup', null, $cancelled);
+        $extractor->extract(self::HTML, 'https://example.com/soup', $cancelled);
 
         self::assertSame($cancelled, $client->cancellations[0], 'the client can ask whether the import was cancelled');
     }
@@ -118,7 +116,7 @@ final class LlmRecipeExtractorTest extends TestCase
         $this->expectException(RecipeImportException::class);
         $this->expectExceptionMessage('not a recipe');
 
-        $extractor->extract('https://example.com/not-a-recipe');
+        $extractor->extract(self::HTML, 'https://example.com/not-a-recipe');
     }
 
     public function testAnAnswerWithoutJsonIsReported(): void
@@ -128,7 +126,7 @@ final class LlmRecipeExtractorTest extends TestCase
         $this->expectException(RecipeImportException::class);
         $this->expectExceptionMessage('valid JSON');
 
-        $extractor->extract('https://example.com/broken');
+        $extractor->extract(self::HTML, 'https://example.com/broken');
     }
 
     public function testAnIncompleteRecipeFailsValidation(): void
@@ -137,7 +135,7 @@ final class LlmRecipeExtractorTest extends TestCase
 
         $this->expectException(ValidationException::class);
 
-        $extractor->extract('https://example.com/incomplete');
+        $extractor->extract(self::HTML, 'https://example.com/incomplete');
     }
 
     /** @return array<string, mixed> */

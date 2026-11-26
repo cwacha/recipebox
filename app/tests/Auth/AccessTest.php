@@ -71,6 +71,8 @@ final class AccessTest extends AuthWebTestCase
             ['DELETE', '/api/recipes/' . $this->recipeId, null],
             ['POST', '/api/recipes/import', [$this->recipePayload()]],
             ['POST', '/api/recipes/import/url', ['url' => 'https://example.com/recipe']],
+            ['POST', '/api/recipes/import/url/page', ['url' => 'https://example.com/recipe']],
+            ['POST', '/api/recipes/import/url/extract', ['token' => 'abc']],
         ] as [$method, $path, $body]) {
             $response = $reader->json($method, $path, $body);
             self::assertSame(403, $response->status(), "$method $path");

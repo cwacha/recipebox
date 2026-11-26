@@ -180,11 +180,84 @@ final class RecipeController extends AbstractController
     }
 
     /**
-     * Asks the configured LLM to turn a web page into recipe data. The result is only a preview; the browser
-     * sends it to import() after the user confirms it. With ?stream=1 the steps are reported as NDJSON events
-     * while the work is done, which is what the import page uses.
+     * One request for API clients: download the page, ask the model and return the preview. The import page
+     * uses importPage() and importExtract() instead, so it can tick off the download before the slow model call.
      */
     public function importUrl(Request $request): Response
+    {
+        $url = $this->recipeUrl($request);
+        $extractor = $this->extractor();
+
+        try {
+            $recipe = $extractor->extract($extractor->fetch($url), $url);
+        } catch (RecipeImportException $e) {
+            throw new HttpException(502, 'The recipe could not be read from that URL: ' . $e->getMessage());
+        }
+
+        return $this->json(['recipe' => $recipe, 'url' => $url]);
+    }
+
+    /**
+     * First half of the import page's URL import: download the page and keep it in the session until the model
+     * has read it. This request is quick, so the browser can report the download as done before the model call
+     * starts (a buffering proxy would otherwise hold back every progress event until the very end).
+     */
+    public function importPage(Request $request): Response
+    {
+        $url = $this->recipeUrl($request);
+        $extractor = $this->extractor();
+
+        try {
+            $html = $extractor->fetch($url);
+        } catch (RecipeImportException $e) {
+            throw new HttpException(502, 'The page could not be downloaded: ' . $e->getMessage());
+        }
+
+        $token = bin2hex(random_bytes(16));
+        $request->session()->set('import_page', [
+            'token' => $token,
+            'url' => $url,
+            'html' => $html,
+            'time' => time(),
+        ]);
+
+        return $this->json(['token' => $token, 'url' => $url, 'bytes' => strlen($html)]);
+    }
+
+    /**
+     * Second half: ask the model about the page downloaded by importPage(). The answer is streamed only so that
+     * a cancelled import (the browser closes the connection) stops the request to the model; the page measures
+     * the steps from the request boundaries and only needs the final event.
+     */
+    public function importExtract(Request $request): Response
+    {
+        $value = $request->json()['token'] ?? '';
+        $token = is_scalar($value) ? (string) $value : '';
+        $extractor = $this->extractor();
+
+        $session = $request->session();
+        $page = $session->get('import_page');
+        $session->remove('import_page');
+        $session->close(); // the model may take a minute; other requests of this browser must not wait for it
+
+        if (!is_array($page)
+            || !is_string($page['token'] ?? null)
+            || !is_string($page['url'] ?? null)
+            || !is_string($page['html'] ?? null)
+            || !is_int($page['time'] ?? null)
+            || !hash_equals($page['token'], $token)
+            || time() - $page['time'] > 600
+        ) {
+            throw new HttpException(409, 'The downloaded page is no longer available. Please fetch the recipe again.');
+        }
+
+        return new StreamedJsonResponse(function (Closure $emit) use ($extractor, $page): void {
+            $this->streamExtraction($extractor, $page['html'], $page['url'], $emit);
+        });
+    }
+
+    /** The URL from the request body, validated for a page that may be downloaded. */
+    private function recipeUrl(Request $request): string
     {
         $value = $request->json()['url'] ?? '';
         $url = is_scalar($value) ? trim((string) $value) : '';
@@ -197,36 +270,22 @@ final class RecipeController extends AbstractController
             throw new ValidationException(['url' => 'Enter a valid http(s) recipe URL.']);
         }
 
-        $extractor = $this->extractor;
-        if ($extractor === null) {
-            throw new HttpException(503, 'Importing a recipe from a URL is not configured.');
-        }
+        return $url;
+    }
 
-        if ($request->query('stream') === '1') {
-            return new StreamedJsonResponse(function (Closure $emit) use ($extractor, $url): void {
-                $this->streamExtraction($extractor, $url, $emit);
-            });
-        }
-
-        try {
-            $recipe = $extractor->extract($url);
-        } catch (RecipeImportException $e) {
-            throw new HttpException(502, 'The recipe could not be read from that URL: ' . $e->getMessage());
-        }
-
-        return $this->json(['recipe' => $recipe, 'url' => $url]);
+    private function extractor(): RecipeExtractor
+    {
+        return $this->extractor ?? throw new HttpException(503, 'Importing a recipe from a URL is not configured.');
     }
 
     /**
-     * Reports every step of the extraction as an event. Errors become events as well, because the HTTP headers
-     * have already been sent by the time the work starts.
+     * Asks the model for the recipe and streams the result. Errors become events as well, because the HTTP
+     * headers have already been sent by the time the work starts.
      *
      * @param Closure(array<string, mixed>): void $emit
      */
-    private function streamExtraction(RecipeExtractor $extractor, string $url, Closure $emit): void
+    private function streamExtraction(RecipeExtractor $extractor, string $html, string $url, Closure $emit): void
     {
-        $emit(['event' => 'step', 'step' => 'check']);
-
         // The browser closes this connection when the import is cancelled. A heartbeat while the model works makes
         // PHP notice that, and the request to the model is aborted instead of running to its end unseen.
         $cancelled = static function () use ($emit): bool {
@@ -236,9 +295,7 @@ final class RecipeController extends AbstractController
         };
 
         try {
-            $recipe = $extractor->extract($url, static function (string $step) use ($emit): void {
-                $emit(['event' => 'step', 'step' => $step]);
-            }, $cancelled);
+            $recipe = $extractor->extract($html, $url, $cancelled);
             $emit(['event' => 'done', 'recipe' => $recipe, 'url' => $url]);
         } catch (RecipeImportException $e) {
             $emit(['event' => 'error', 'message' => 'The recipe could not be read from that URL: ' . $e->getMessage()]);

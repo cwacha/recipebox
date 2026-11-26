@@ -321,6 +321,8 @@ final class Application
             ->add('POST', '/api/recipes', $recipes->store(...), 'recipe_create')
             ->add('POST', '/api/recipes/import', $recipes->import(...), 'recipe_import')
             ->add('POST', '/api/recipes/import/url', $recipes->importUrl(...), 'recipe_import')
+            ->add('POST', '/api/recipes/import/url/page', $recipes->importPage(...), 'recipe_import')
+            ->add('POST', '/api/recipes/import/url/extract', $recipes->importExtract(...), 'recipe_import')
             // The web interface uses POST for everything, because many Apache setups only allow GET and POST.
             // PUT and DELETE remain for API clients that can send them.
             ->add('POST', '/api/recipes/{id}/delete', $recipes->destroy(...), 'recipe_delete')

@@ -7,6 +7,7 @@ namespace Tests;
 use App\Application;
 use App\Exception\ValidationException;
 use App\Http\Request;
+use App\Http\Session;
 use App\Http\StreamedJsonResponse;
 use App\Repository\JsonFileRecipeRepository;
 use App\Service\RecipeExtractor;
@@ -20,6 +21,7 @@ final class UrlImportTest extends TestCase
     private string $dir;
     private JsonFileRecipeRepository $recipes;
     private FakeRecipeExtractor $extractor;
+    private Session $session;
     private Application $app;
 
     protected function setUp(): void
@@ -28,6 +30,7 @@ final class UrlImportTest extends TestCase
         mkdir($this->dir, 0775, true);
         $this->recipes = new JsonFileRecipeRepository($this->dir . '/recipes.json');
         $this->extractor = new FakeRecipeExtractor();
+        $this->session = Session::memory();
         $this->app = $this->app($this->extractor);
     }
 
@@ -109,51 +112,80 @@ final class UrlImportTest extends TestCase
         self::assertSame([], $this->recipes->all());
     }
 
-    public function testTheStreamedImportReportsEveryStep(): void
+    public function testThePageIsDownloadedBeforeTheModelIsAsked(): void
     {
         $this->extractor->recipe = $this->recipe();
+        $this->extractor->html = '<html>Tomato Soup</html>';
 
-        $response = $this->app->handle(new Request('POST', '/api/recipes/import/url', '', ['stream' => '1'], (string) json_encode(['url' => 'https://example.com/soup'])));
+        $page = $this->call('POST', '/api/recipes/import/url/page', ['url' => 'https://example.com/soup'])['json'];
 
-        self::assertInstanceOf(StreamedJsonResponse::class, $response);
-        self::assertSame('application/x-ndjson; charset=utf-8', $response->headers()['Content-Type']);
+        self::assertSame('https://example.com/soup', $page['url']);
+        self::assertSame(strlen('<html>Tomato Soup</html>'), $page['bytes']);
+        self::assertSame(['https://example.com/soup'], $this->extractor->urls);
+        self::assertSame([], $this->extractor->htmls, 'the model is not asked yet');
 
-        $events = $response->events();
-        $steps = [];
-        foreach ($events as $event) {
-            if (($event['event'] ?? '') === 'step') {
-                $steps[] = $event['step'];
-            }
-        }
-        self::assertSame(['check', 'download', 'ask', 'parse'], $steps);
+        $events = $this->extract($page['token']);
 
         $done = end($events);
         self::assertSame('done', $done['event']);
         self::assertSame('Tomato Soup', $done['recipe']['title']);
         self::assertSame('https://example.com/soup', $done['url']);
+        self::assertSame(['<html>Tomato Soup</html>'], $this->extractor->htmls, 'the downloaded page reaches the model');
         self::assertSame([], $this->recipes->all(), 'the preview is not stored');
     }
 
-    public function testAStreamedFailureIsReportedAsAnErrorEvent(): void
+    public function testAPageDownloadFailureIsReportedBeforeTheModelIsAsked(): void
     {
-        $this->extractor->error = new RecipeImportException('the page could not be downloaded: the server answered with HTTP 404.');
+        $this->extractor->error = new RecipeImportException('the server answered with HTTP 404.');
 
-        $events = $this->app->handle(new Request('POST', '/api/recipes/import/url', '', ['stream' => '1'], (string) json_encode(['url' => 'https://example.com/soup'])))->events();
+        $res = $this->call('POST', '/api/recipes/import/url/page', ['url' => 'https://example.com/missing']);
 
-        $last = end($events);
-        self::assertSame('error', $last['event']);
-        self::assertStringContainsString('HTTP 404', $last['message']);
+        self::assertSame(502, $res['status']);
+        self::assertStringContainsString('The page could not be downloaded', $res['json']['error']);
+        self::assertSame([], $this->extractor->htmls);
     }
 
-    public function testAStreamedAnswerThatIsNoRecipeIsReportedWithItsErrors(): void
+    public function testAModelFailureIsReportedAsAnErrorEvent(): void
     {
+        $page = $this->call('POST', '/api/recipes/import/url/page', ['url' => 'https://example.com/soup'])['json'];
+        $this->extractor->extractError = new RecipeImportException('the page does not contain a recipe');
+
+        $events = $this->extract($page['token']);
+        $last = end($events);
+
+        self::assertSame('error', $last['event']);
+        self::assertStringContainsString('the page does not contain a recipe', $last['message']);
+    }
+
+    public function testAnAnswerThatIsNoRecipeIsReportedWithItsErrors(): void
+    {
+        $page = $this->call('POST', '/api/recipes/import/url/page', ['url' => 'https://example.com/soup'])['json'];
         $this->extractor->invalid = true;
 
-        $events = $this->app->handle(new Request('POST', '/api/recipes/import/url', '', ['stream' => '1'], (string) json_encode(['url' => 'https://example.com/soup'])))->events();
-
+        $events = $this->extract($page['token']);
         $last = end($events);
+
         self::assertSame('error', $last['event']);
         self::assertArrayHasKey('title', $last['errors']);
+    }
+
+    public function testExtractingNeedsThePageOfTheSameBrowser(): void
+    {
+        $res = $this->call('POST', '/api/recipes/import/url/extract', ['token' => 'does-not-exist']);
+
+        self::assertSame(409, $res['status']);
+        self::assertSame([], $this->extractor->htmls);
+    }
+
+    public function testTheDownloadedPageIsOnlyUsedOnce(): void
+    {
+        $this->extractor->recipe = $this->recipe();
+        $page = $this->call('POST', '/api/recipes/import/url/page', ['url' => 'https://example.com/soup'])['json'];
+
+        $this->extract($page['token']);
+        $second = $this->call('POST', '/api/recipes/import/url/extract', ['token' => $page['token']]);
+
+        self::assertSame(409, $second['status']);
     }
 
     private function app(?RecipeExtractor $extractor, array $llm = ['endpoint' => '']): Application
@@ -185,9 +217,24 @@ final class UrlImportTest extends TestCase
      */
     private function call(string $method, string $path, ?array $body = null, ?Application $app = null): array
     {
-        $response = ($app ?? $this->app)->handle(new Request($method, $path, '', [], $body === null ? '' : json_encode($body)));
+        $response = ($app ?? $this->app)->handle($this->request($method, $path, $body));
 
         return ['status' => $response->status(), 'json' => json_decode($response->body(), true) ?? []];
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function extract(string $token): array
+    {
+        $response = $this->app->handle($this->request('POST', '/api/recipes/import/url/extract', ['token' => $token]));
+        self::assertInstanceOf(StreamedJsonResponse::class, $response);
+
+        return $response->events();
+    }
+
+    /** @param array<string, mixed>|null $body */
+    private function request(string $method, string $path, ?array $body = null): Request
+    {
+        return new Request($method, $path, '', [], $body === null ? '' : (string) json_encode($body), session: $this->session);
     }
 
     /** @return array<string, mixed> */
@@ -224,24 +271,33 @@ final class FakeRecipeExtractor implements RecipeExtractor
 {
     /** @var list<string> */
     public array $urls = [];
+    /** @var list<string> */
+    public array $htmls = [];
     /** @var array<string, mixed>|null */
     public ?array $recipe = null;
+    public string $html = '<html>a recipe page</html>';
     public ?Throwable $error = null;
+    public ?Throwable $extractError = null;
     public bool $invalid = false;
 
-    public function extract(string $url, ?callable $onStep = null, ?callable $cancelled = null): array
+    public function fetch(string $url): string
     {
         $this->urls[] = $url;
-        $onStep ??= static function (string $step): void {
-        };
 
-        $onStep('download');
         if ($this->error !== null) {
             throw $this->error;
         }
-        $onStep('ask');
-        $onStep('parse');
 
+        return $this->html;
+    }
+
+    public function extract(string $html, string $url, ?callable $cancelled = null): array
+    {
+        $this->htmls[] = $html;
+
+        if ($this->extractError !== null) {
+            throw $this->extractError;
+        }
         if ($this->invalid) {
             throw new ValidationException(['title' => 'A title is required.']);
         }

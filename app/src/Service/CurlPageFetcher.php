@@ -30,7 +30,7 @@ final class CurlPageFetcher implements PageFetcher
                 $this->allowPrivateHosts,
             ))->fetch($url);
         } catch (RemoteFetchException $e) {
-            throw new RecipeImportException('the page could not be downloaded: ' . $e->getMessage() . '.', 0, $e);
+            throw new RecipeImportException($e->getMessage() . '.', 0, $e);
         }
     }
 }
