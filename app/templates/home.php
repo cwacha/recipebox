@@ -62,10 +62,10 @@ $chipUrl = static fn (string $cat): string => $url('/') . ($q !== '' || $cat !==
                     <article class="card recipe-card">
                         <a class="stretched-link-card" href="<?= $e($url('/recipes/' . $r->slug)) ?>" aria-label="<?= $e($r->title) ?>"></a>
                         <div class="thumb">
-                            <div class="placeholder-icon"><i class="bi bi-egg-fried"></i></div>
                             <?php if ($src = $img($r->image)): ?>
                                 <img src="<?= $e($src) ?>" alt="<?= $e($r->title) ?>" loading="lazy" onerror="this.remove()">
                             <?php endif; ?>
+                            <div class="placeholder-icon"><i class="bi bi-egg-fried"></i></div>
                             <span class="time-badge"><i class="bi bi-clock"></i> <?= $e($minutes($r->cookingTime)) ?></span>
                         </div>
                         <div class="card-body">

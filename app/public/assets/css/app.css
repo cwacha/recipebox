@@ -196,6 +196,11 @@ h1, h2.display, .brand, .recipe-title, .card-title-serif {
     opacity: .6;
 }
 
+/* The icon is a fallback: a broken image removes itself, so the icon reappears. */
+.thumb img + .placeholder-icon {
+    display: none;
+}
+
 .time-badge {
     position: absolute;
     top: .75rem;
