@@ -75,7 +75,8 @@ $cancel = $recipe ? $url('/recipes/' . $recipe->slug) : $url('/');
                         <div class="row-item">
                             <input class="form-control qty-input ing-qty" placeholder="Amount" maxlength="40" value="<?= $e($ingredient?->quantity) ?>">
                             <input class="form-control ing-name" placeholder="Ingredient" maxlength="150" value="<?= $e($ingredient?->name) ?>">
-                            <button type="button" class="btn btn-outline-secondary btn-sm mt-1 btn-remove" title="Remove" aria-label="Remove"><i class="bi bi-x-lg"></i></button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm row-drag" draggable="true" title="Drag to reorder" aria-label="Drag to reorder"><i class="bi bi-list"></i></button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm btn-remove" title="Remove" aria-label="Remove"><i class="bi bi-x-lg"></i></button>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -89,11 +90,8 @@ $cancel = $recipe ? $url('/recipes/' . $recipe->slug) : $url('/');
                         <div class="row-item">
                             <span class="num"></span>
                             <textarea class="form-control step-text-input" rows="5" placeholder="Describe this step…"><?= $e($step) ?></textarea>
-                            <div class="btn-group-vertical btn-group-sm">
-                                <button type="button" class="btn btn-outline-secondary btn-up" title="Move up" aria-label="Move up"><i class="bi bi-chevron-up"></i></button>
-                                <button type="button" class="btn btn-outline-secondary btn-down" title="Move down" aria-label="Move down"><i class="bi bi-chevron-down"></i></button>
-                            </div>
-                            <button type="button" class="btn btn-outline-secondary btn-sm mt-1 btn-remove" title="Remove" aria-label="Remove"><i class="bi bi-x-lg"></i></button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm row-drag" draggable="true" title="Drag to reorder" aria-label="Drag to reorder"><i class="bi bi-list"></i></button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm btn-remove" title="Remove" aria-label="Remove"><i class="bi bi-x-lg"></i></button>
                         </div>
                     <?php endforeach; ?>
                 </div>

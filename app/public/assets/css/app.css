@@ -444,6 +444,37 @@ mark {
     font-size: .85rem;
 }
 
+.row-item .row-drag {
+    flex: none;
+    align-self: center;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-drag: element;
+}
+
+.row-item .btn-remove {
+    flex: none;
+    align-self: center;
+}
+
+.row-item.dragging {
+    opacity: .45;
+}
+
+.row-item.dragging .row-drag {
+    cursor: grabbing;
+}
+
+.row-drag-ghost {
+    position: fixed;
+    z-index: 2000;
+    pointer-events: none;
+    opacity: .9;
+    border-radius: .5rem;
+    background: var(--bs-body-bg);
+    box-shadow: 0 .75rem 1.5rem rgba(0, 0, 0, .18);
+}
+
 /* Add buttons sit below their rows; keep this one under the textarea instead of the number badge. */
 .step-add {
     margin-left: 2.5rem;

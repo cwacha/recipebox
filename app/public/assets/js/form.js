@@ -3,22 +3,34 @@
 
     const $form = $('#editForm');
     const id = $form.attr('data-id');
+    let draggedRow = null;
+    let draggedMidOffset = 0;
+    let lastDragY = 0;
+    let $dragGhost = null;
+    let dragGhostTop = 0;
+    let dragGhostStartY = 0;
+
+    // A preloaded transparent image: it hides the browser's own drag image, which cannot be
+    // constrained to vertical movement.
+    const dragImage = $('<img alt="" width="1" height="1">')
+        .attr('src', 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7')
+        .css({position: 'fixed', top: 0, left: 0, width: '1px', height: '1px', pointerEvents: 'none'})
+        .appendTo(document.body)[0];
 
     function ingredientRow() {
         return $('<div class="row-item">' +
             '<input class="form-control qty-input ing-qty" placeholder="Amount" maxlength="40">' +
             '<input class="form-control ing-name" placeholder="Ingredient" maxlength="150">' +
-            '<button type="button" class="btn btn-outline-secondary btn-sm mt-1 btn-remove" title="Remove" aria-label="Remove"><i class="bi bi-x-lg"></i></button></div>');
+            '<button type="button" class="btn btn-outline-secondary btn-sm row-drag" draggable="true" title="Drag to reorder" aria-label="Drag to reorder"><i class="bi bi-list"></i></button>' +
+            '<button type="button" class="btn btn-outline-secondary btn-sm btn-remove" title="Remove" aria-label="Remove"><i class="bi bi-x-lg"></i></button></div>');
     }
 
     function stepRow() {
         return $('<div class="row-item">' +
             '<span class="num"></span>' +
             '<textarea class="form-control step-text-input" rows="2" placeholder="Describe this step…"></textarea>' +
-            '<div class="btn-group-vertical btn-group-sm">' +
-            '<button type="button" class="btn btn-outline-secondary btn-up" title="Move up" aria-label="Move up"><i class="bi bi-chevron-up"></i></button>' +
-            '<button type="button" class="btn btn-outline-secondary btn-down" title="Move down" aria-label="Move down"><i class="bi bi-chevron-down"></i></button></div>' +
-            '<button type="button" class="btn btn-outline-secondary btn-sm mt-1 btn-remove" title="Remove" aria-label="Remove"><i class="bi bi-x-lg"></i></button></div>');
+            '<button type="button" class="btn btn-outline-secondary btn-sm row-drag" draggable="true" title="Drag to reorder" aria-label="Drag to reorder"><i class="bi bi-list"></i></button>' +
+            '<button type="button" class="btn btn-outline-secondary btn-sm btn-remove" title="Remove" aria-label="Remove"><i class="bi bi-x-lg"></i></button></div>');
     }
 
     function renumber() {
@@ -110,16 +122,92 @@
         $(this).closest('.row-item').remove();
         renumber();
     });
-    $('#stepRows').on('click', '.btn-up', function () {
-        const $row = $(this).closest('.row-item');
-        $row.prev().before($row);
-        renumber();
-    });
-    $('#stepRows').on('click', '.btn-down', function () {
-        const $row = $(this).closest('.row-item');
-        $row.next().after($row);
-        renumber();
-    });
+
+    // Drag a step or ingredient by its handle. Reordering happens while dragging.
+    $form
+        .on('dragstart', '.row-drag', function (e) {
+            const $row = $(this).closest('.row-item');
+            const rect = $row[0].getBoundingClientRect();
+            const grabY = e.originalEvent.clientY - rect.top;
+            draggedMidOffset = rect.height / 2 - grabY;
+            lastDragY = e.originalEvent.clientY;
+            draggedRow = $row.addClass('dragging');
+
+            // Native drag images always follow the cursor, so hide it and show a fixed clone that
+            // only moves vertically.
+            try {
+                $dragGhost = $row.clone()
+                    .removeClass('dragging')
+                    .addClass('row-drag-ghost')
+                    .css({left: rect.left + 'px', top: rect.top + 'px', width: rect.width + 'px'})
+                    .appendTo(document.body);
+                $dragGhost.find('input').each(function (i) {
+                    $(this).val($row.find('input').eq(i).val());
+                });
+                $dragGhost.find('textarea').val($row.find('textarea').val());
+                dragGhostTop = rect.top;
+                dragGhostStartY = e.originalEvent.clientY;
+            } catch (err) {
+                $dragGhost = null;
+            }
+
+            const data = e.originalEvent.dataTransfer;
+            if (data) {
+                data.effectAllowed = 'move';
+                try {
+                    data.setData('text/plain', ''); // Firefox needs data before it starts a drag
+                    if (data.setDragImage) data.setDragImage(dragImage, 0, 0);
+                } catch (err) {
+                    // Some browsers refuse custom drag images; reordering still works without one.
+                }
+            }
+        })
+        .on('dragend', '.row-drag', function () {
+            if (draggedRow) draggedRow.removeClass('dragging');
+            if ($dragGhost) $dragGhost.remove();
+            draggedRow = null;
+            $dragGhost = null;
+        });
+
+    // Listen on the document: the custom ghost must never intercept dragover events.
+    $(document)
+        .on('dragover', function (e) {
+            if (!draggedRow) return;
+            e.preventDefault();
+            const data = e.originalEvent.dataTransfer;
+            if (data) data.dropEffect = 'move';
+
+            // Follow the midpoint of the drag image, not the cursor, so the swap happens when the
+            // dragged item reaches the edge of its neighbour.
+            const y = e.originalEvent.clientY;
+            const mid = y + draggedMidOffset;
+
+            if (y < lastDragY) {
+                // Moving up: the item above moves down once the dragged midpoint passes its bottom.
+                let $prev = draggedRow.prev('.row-item');
+                while ($prev.length && mid < $prev[0].getBoundingClientRect().bottom) {
+                    $prev.before(draggedRow);
+                    renumber();
+                    $prev = draggedRow.prev('.row-item');
+                }
+            } else if (y > lastDragY) {
+                // Moving down: the item below moves up once the dragged midpoint passes its top.
+                let $next = draggedRow.next('.row-item');
+                while ($next.length && mid > $next[0].getBoundingClientRect().top) {
+                    $next.after(draggedRow);
+                    renumber();
+                    $next = draggedRow.next('.row-item');
+                }
+            }
+
+            lastDragY = y;
+        })
+        .on('drop', function (e) {
+            if (draggedRow) e.preventDefault();
+        })
+        .on('drag', function (e) {
+            if ($dragGhost) $dragGhost.css('top', dragGhostTop + (e.originalEvent.clientY - dragGhostStartY));
+        });
     $('#ingredientRows').on('keydown', '.ing-name', function (e) {
         if (e.key !== 'Enter') return;
         e.preventDefault();
