@@ -12,16 +12,34 @@ composer install
 composer start          # php -S localhost:8000 -t public
 ```
 
-Open <http://localhost:8000> and sign in with **`admin` / `admin`**. You are taken to the password page right away:
+Open <http://localhost:8000>. A fresh installation opens the setup (see *First start*); afterwards sign in with
+**`admin` / `admin`**. You are taken to the password page right away:
 **change this default password before the application is reachable by anybody else.** Run the tests with `composer test`.
 
-Requirements: PHP 8.2+ with `json`, `fileinfo` and `curl` (plus `pdo_sqlite` for SQLite storage, `intl` is used for slugs when present), Composer. Bootstrap, Bootstrap Icons, jQuery and the web fonts
+Requirements: PHP 8.2+ with `json`, `fileinfo`, `mbstring` and `curl` (plus `pdo_sqlite` for SQLite storage, `intl` is used for slugs when present), Composer. Bootstrap, Bootstrap Icons, jQuery and the web fonts
 are bundled under `public/assets/vendor/`, so the browser needs no internet access.
 
 On Apache, point the document root at `public/` (`.htaccess` is included) and allow `.htaccess` overrides
 (`AllowOverride FileInfo AuthConfig Options`). Under nginx, route unknown paths to `public/index.php`.
 `config/`, `var/state/`, `var/sessions/`, `public/images/` and `public/uploads/` must be writable by the web server, and nothing
 outside `public/` may be served (see *Server locations*).
+
+### First start
+
+A missing `config/config.php` marks a fresh installation. The first request then opens the setup instead of the
+recipe list:
+
+1. **Server checks** – PHP version, required and optional extensions, writable directories and the shipped
+   application files. Everything that is required must be green; optional items (for example `pdo_sqlite` or
+   `intl`) are only hints. Fix a red item, make the directory writable (see `bin/dev-permissions`) and reload.
+2. **Initial configuration** – once all required checks pass, confirm the storage backend, the URL prefix, access
+   control and (optionally) the LLM import. Saving writes `config/config.php`; from then on the application runs
+   normally and seeds the sample recipes on the first request.
+
+The setup page is public while the application is not configured yet, so do not leave a fresh installation
+reachable on the internet. Sign in with **`admin` / `admin`** afterwards; you are taken to the password page
+right away.
+
 
 ### Configuration
 
@@ -322,6 +340,7 @@ src/
   Auth/            SecurityController, AuthenticatorDefault, AuthorizerDefault (+ Contract/), WebAuth, Csrf, LayeredStore
   Http/            Request, Response, JsonResponse, RedirectResponse, Router, Session, Cookie
   Controller/      AbstractController -> RecipeController, UploadController, PageController, AuthController, AdminController
+  Install/         Requirements (checks before the first configuration)
   Model/           Recipe, Ingredient (readonly value classes)
   Repository/      RecipeRepositoryInterface -> AbstractRecipeRepository (search, ranking)
                    -> JsonFileRecipeRepository   (var/state/recipes.json)
@@ -330,7 +349,7 @@ src/
   View/            View (renders templates inside the layout, escaping helpers)
   Validation/      RecipeValidator
   Service/         ImageStorage, ImageLocalizer, RemoteFetcher + CurlImageFetcher / CurlPageFetcher (downloads), LlmRecipeExtractor + CurlLlmClient (URL import), SlugGenerator, Seeder
-templates/         layout, home, recipe, form, import, error
+templates/         layout, home, recipe, form, import, error, install/ (first-run setup)
 tests/             PHPUnit
 ```
 

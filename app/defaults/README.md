@@ -12,7 +12,8 @@ These files are required for the whole lifecycle of the application:
   and permissions
 
 The local `config/config.php` is managed by **Administration → Configuration** and contains only the
-settings that differ from `config.php`. Do not put defaults there.
+settings that differ from `config.php`. Do not put defaults there. On a fresh installation it does not
+exist yet; the setup page writes it after the server checks pass.
 
 ## Seed data
 

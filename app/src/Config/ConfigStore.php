@@ -21,6 +21,12 @@ final class ConfigStore
     ) {
     }
 
+    /** The file that holds the local differences; its existence marks a configured installation. */
+    public function localFile(): string
+    {
+        return $this->localFile;
+    }
+
     /** @return array<string, mixed> */
     public function defaults(): array
     {

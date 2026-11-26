@@ -14,6 +14,7 @@ use App\Config\ConfigStore;
 use App\Config\JsonFile;
 use App\Controller\AdminController;
 use App\Controller\AuthController;
+use App\Controller\InstallController;
 use App\Controller\PageController;
 use App\Controller\RecipeController;
 use App\Controller\UploadController;
@@ -25,6 +26,7 @@ use App\Http\Request;
 use App\Http\Response;
 use App\Http\Router;
 use App\Http\Session;
+use App\Install\Requirements;
 use App\Repository\RecipeRepositoryInterface;
 use App\Repository\RepositoryFactory;
 use App\Service\CurlImageFetcher;
@@ -53,6 +55,9 @@ final class Application
     private readonly SecurityController $security;
     private readonly WebAuth $webAuth;
     private readonly Csrf $csrf;
+    private readonly ConfigStore $configStore;
+    /** A missing config/config.php means this is a fresh installation that still needs setup. */
+    private readonly bool $installed;
 
     /** @param array<string, mixed> $config overrides for defaults/config.php and config/config.php */
     public function __construct(
@@ -63,9 +68,23 @@ final class Application
         private readonly ?RecipeExtractor $recipeExtractor = null,
         private readonly ?PageFetcher $pageFetcher = null,
         private readonly ?ImageStorage $images = null,
-        private readonly ?ConfigStore $configStore = null,
+        ?ConfigStore $configStore = null,
     ) {
-        $config = Config::load($config);
+        $this->configStore = $configStore ?? new ConfigStore(DEFAULTSDIR . '/config.php', CONFDIR . '/config.php');
+        $this->installed = is_file($this->configStore->localFile());
+
+        try {
+            // The store knows the shipped defaults and the local differences; caller overrides still win last.
+            $config = array_replace($this->configStore->current(), $config);
+        } catch (Throwable $e) {
+            // Without the shipped defaults a fresh installation cannot be configured, but the setup page
+            // must still be able to report the missing files. Once installed, a broken config is an error.
+            if ($this->installed) {
+                throw $e;
+            }
+            $config = [];
+        }
+
         $config['base_url'] = ($config['base_url'] ?? null) === null ? null : Request::normalizeBaseUrl((string) $config['base_url']);
         $config['auth'] = AuthFactory::normalize(Config::section($config, 'auth'));
         $config['llm'] = Config::section($config, 'llm');
@@ -80,7 +99,7 @@ final class Application
             $this->config['auth'],
         );
         $this->csrf = new Csrf();
-        $this->router = $this->buildRouter();
+        $this->router = $this->installed ? $this->buildRouter() : new Router();
     }
 
     public function run(?Request $request = null): void
@@ -93,6 +112,10 @@ final class Application
         $identity = null;
         if ($this->baseUrl !== null) {
             $request = $request->withBasePath($this->baseUrl);
+        }
+
+        if (!$this->installed) {
+            return $this->handleInstall($request);
         }
 
         try {
@@ -122,6 +145,25 @@ final class Application
         }
 
         return $response;
+    }
+
+    /**
+     * A fresh installation answers every request with the setup flow. Static assets never reach the
+     * application, and the configuration form only accepts a POST to /install/config.
+     */
+    private function handleInstall(Request $request): Response
+    {
+        $installer = new InstallController(BASEDIR . '/templates', $this->configStore, new Requirements());
+        $path = $request->path === '/' ? '/' : rtrim($request->path, '/');
+
+        if ($request->method === 'POST' && $path === '/install/config') {
+            return $installer->save($request);
+        }
+        if ($request->method === 'GET' && $path === '/install/config') {
+            return $installer->config($request);
+        }
+
+        return $installer->check($request);
     }
 
     private function dispatch(Request $request, Identity $identity, Session $session): Response
@@ -287,7 +329,7 @@ final class Application
             $this->security,
             $this->webAuth,
             $templates,
-            $this->configStore ?? new ConfigStore(DEFAULTSDIR . '/config.php', CONFDIR . '/config.php'),
+            $this->configStore,
         );
 
         // The last argument is what the account needs for the route: a view (starts with "/") or an action.
