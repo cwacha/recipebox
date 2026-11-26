@@ -7,12 +7,8 @@ namespace App;
 use RuntimeException;
 
 /**
- * Loads the configuration in four layers: the shipped defaults in defaults/config.php, the local
- * overrides in config/config.php, environment variables, and finally any overrides passed by the caller.
- *
- * Environment variables stay supported even though config/config.php is now managed by the
- * administration: saving the configuration rewrites that file with plain differences, it does not
- * bake environment values into it.
+ * Loads the configuration in three layers: the shipped defaults in defaults/config.php, the local
+ * overrides in config/config.php, and finally any overrides passed by the caller.
  */
 final class Config
 {

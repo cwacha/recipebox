@@ -37,8 +37,8 @@ resetting a setting to its default removes it from the local file again. Opening
 permission; saving needs `config_edit`.
 
 You can still edit `config/config.php` by hand. The administration reads the file, and the next save rewrites it in
-the managed, difference-only form. Environment variables (`RECIPES_*`, see the tables below) override the file and
-therefore keep working in deployments.
+the managed, difference-only form. `APP_DEBUG=1` is the only environment variable the application reads; it shows
+exception messages on internal errors instead of the generic error page.
 
 All settings are flat. Nested sections use a prefix instead of a nested array: `llm_endpoint`, `auth_enabled`,
 `auth_cookie_secure`, and so on. A new setting added to `defaults/config.php` appears on the configuration page
@@ -48,9 +48,9 @@ without code changes; add an entry to `App\Config\ConfigSchema` only when it nee
 
 The application's filesystem root is fixed by `BASEDIR` in `src/constants.php`. Only the public URL prefix is configurable:
 
-| Setting | Environment | Meaning |
-|---|---|---|
-| `base_url` | `RECIPES_BASE_URL` | URL prefix under which `public/` is served: `''` for a document root, `/~user/recipebox/public` for the example below. `null` (default) detects it from every request (`SCRIPT_NAME`), which covers the built-in server as well as Apache/nginx at the root or in a subdirectory. Set it explicitly behind a reverse proxy that strips the prefix. |
+| Setting | Meaning |
+|---|---|
+| `base_url` | URL prefix under which `public/` is served: `''` for a document root, `/~user/recipebox/public` for the example below. `null` (default) detects it from every request (`SCRIPT_NAME`), which covers the built-in server as well as Apache/nginx at the root or in a subdirectory. Set it explicitly behind a reverse proxy that strips the prefix. |
 
 With the default `null` nothing has to be configured for any of these:
 
@@ -81,8 +81,8 @@ For `http://localhost/~user/recipebox/public/` (Homebrew Apache with `UserDir Si
    new files inherit this, so `bin/account` and the CLI keep working next to Apache.
 3. Open `http://localhost/~user/recipebox/public/`.
 
-The URL prefix is detected automatically. If you serve it behind a proxy under yet another path, set
-`RECIPES_BASE_URL=/that/prefix`.
+The URL prefix is detected automatically. If you serve it behind a proxy under yet another path, set `base_url` to
+`/that/prefix` in `config/config.php` or **Administration → Configuration**.
 
 ### Why the web interface uses POST
 
@@ -149,7 +149,7 @@ list (the implicit `show`). Visitors who are not signed in are sent to the login
 The API answers `401` (sign in) or `403`.
 
 **Guests.** Visitors who are not signed in act as the account named in `auth_guest_account` (default `guest`, read only).
-Set it to an empty string and everybody has to sign in. **Authentication off:** `RECIPES_AUTH=0` (or `auth_enabled = false`) lets everybody
+Set it to an empty string and everybody has to sign in. **Authentication off:** `auth_enabled = false` lets everybody
 do everything, including the administration; use this only on a trusted machine.
 
 **Credentials.** Login form, HTTP Basic (for API clients; `curl -u editor:secret …/api/recipes`), and a *keep me signed in*
@@ -216,13 +216,13 @@ The import page can ask an external LLM to read a recipe from a web page. Set th
 'llm_timeout' => 60,
 ```
 
-| Setting | Environment | Meaning |
-|---|---|---|
-| `llm_endpoint` | `RECIPES_LLM_ENDPOINT` | OpenAI-compatible chat completions URL. Empty = feature disabled. |
-| `llm_api_key` | `RECIPES_LLM_API_KEY` | Sent as `Authorization: Bearer …`; may be empty for local services. It never reaches the browser. |
-| `llm_model` | `RECIPES_LLM_MODEL` | Model name, default `gpt-4o-mini`. |
-| `llm_prompt` | `RECIPES_LLM_PROMPT` | Instruction for the model. `{html}` is replaced with the page source, `{url}` with the address; a prompt without `{html}` gets the HTML appended. |
-| `llm_timeout` | `RECIPES_LLM_TIMEOUT` | Request timeout in seconds, default 60. |
+| Setting | Meaning |
+|---|---|
+| `llm_endpoint` | OpenAI-compatible chat completions URL. Empty = feature disabled. |
+| `llm_api_key` | Sent as `Authorization: Bearer …`; may be empty for local services. It never reaches the browser. |
+| `llm_model` | Model name, default `gpt-4o-mini`. |
+| `llm_prompt` | Instruction for the model. `{html}` is replaced with the page source, `{url}` with the address; a prompt without `{html}` gets the HTML appended. |
+| `llm_timeout` | Request timeout in seconds, default 60. |
 
 The application downloads the page itself and sends its HTML inside the prompt, so any chat-completions model can be
 used — the model does not have to be able to open URLs. The download follows the same safety rules as image import
@@ -263,9 +263,11 @@ When a recipe is imported, its `image` is handled like this:
 Every recipe gets its own file, even if two recipes use the same link (it is downloaded once). A file is never
 overwritten: if `images/pasta.jpg` already exists, the new one becomes `images/pasta-2.jpg`.
 
-When a recipe is deleted (or its picture is replaced), its picture is deleted too, but only if it is named after that
-recipe's slug (`<slug>.<ext>` or `<slug>-2.<ext>`), not used by another recipe and not one of the default images in
-`defaults/seed/images/`. Files with any other name are never touched.
+When a recipe is deleted (or its picture is replaced), its picture is deleted too, as long as it is not used by another
+recipe and is one this installation manages: an `uploads/` file, an image named after that recipe's slug
+(`<slug>.<ext>` or `<slug>-2.<ext>`), or a default image copied from `defaults/seed/images/`. Other files you placed in
+the images folder yourself are never touched. Removing a recipe and its default picture is permanent, but a fresh
+installation is seeded again from `defaults/`.
 
 The same applies in the editor: a web address pasted into the *Picture* field is downloaded when you save, and the
 recipe keeps the local copy. If the download fails (or the file is not an image) the form shows the error at the field
@@ -275,8 +277,8 @@ an old recipe that still contains a link can be edited even if that site is gone
 Because anonymous users can trigger downloads, the server only fetches from the public internet: http(s) on ports
 80/443, no credentials in the URL, private/loopback/link-local addresses (e.g. `localhost`, `192.168.x.x`,
 `169.254.169.254`) are refused for the first request and every redirect, files are limited to 8 MB / 15 s, and the content
-must really be an image. To import from a server in your own network, set `RECIPES_IMPORT_ALLOW_PRIVATE_HOSTS=1`
-(or `import_allow_private_hosts` in **Administration → Configuration**). Requires the `curl` PHP extension.
+must really be an image. To import from a server in your own network, set `import_allow_private_hosts` to `true` in
+**Administration → Configuration**. Requires the `curl` PHP extension.
 
 ### JSON format
 
@@ -314,7 +316,7 @@ bin/account        list accounts, set a password, create an account (recovery)
 bin/dev-permissions  lets the web server write config/, var/, var/sessions/, uploads and images
 src/
   Application.php  wiring, routes, permission per route, base_url
-  Config.php       loads defaults/config.php, config/config.php, environment and caller overrides
+  Config.php       loads defaults/config.php, config/config.php and caller overrides
   Config/          ConfigSchema (controls per setting), ConfigForm (validation), ConfigStore (difference-only writer)
   constants.php    global filesystem constants (BASEDIR, CONFDIR, STATEDIR, ...)
   Auth/            SecurityController, AuthenticatorDefault, AuthorizerDefault (+ Contract/), WebAuth, Csrf, LayeredStore
@@ -342,9 +344,9 @@ ranking logic (`AbstractRecipeRepository`); one test suite runs against both.
 | `json` (default) | `var/state/recipes.json` | single human-readable file, file locking and atomic writes |
 | `sqlite` | `var/state/recipes.sqlite` | needs `pdo_sqlite`; WAL mode, transactional writes, schema is created automatically |
 
-Select the backend in **Administration → Configuration** (or `config/config.php`: `'storage' => 'sqlite'`) or with an environment variable, e.g.
-`RECIPES_STORAGE=sqlite composer start`. The file names can be changed with `RECIPES_STATE_FILE` (JSON) and
-`RECIPES_SQLITE_FILE` (SQLite). Both are bare file names; they are always placed inside `var/state/`.
+Select the backend in **Administration → Configuration** (or `config/config.php`: `'storage' => 'sqlite'`). The file
+names can be changed with the `json_file` and `sqlite_file` settings. Both are bare file names; they are always placed
+inside `var/state/`.
 
 **Switching an existing installation** – copy your recipes first, then change the setting:
 

@@ -6,7 +6,7 @@
             "title": "Spaghetti Carbonara",
             "description": "The Roman classic: silky egg and pecorino sauce, crispy guanciale and lots of black pepper. No cream needed.",
             "category": "Pasta",
-            "image": "images/carbonara.jpg",
+            "image": "images/spaghetti-carbonara.jpg",
             "servings": 4,
             "cooking_time": 25,
             "ingredients": [
@@ -62,7 +62,7 @@
             "title": "Chicken Tikka Masala",
             "description": "Tender marinated chicken in a creamy, mildly spiced tomato sauce. Perfect with basmati rice and naan.",
             "category": "Curry",
-            "image": "images/tikka-masala.jpg",
+            "image": "images/chicken-tikka-masala.jpg",
             "servings": 4,
             "cooking_time": 60,
             "ingredients": [
@@ -206,7 +206,7 @@
             "title": "Fluffy Blueberry Pancakes",
             "description": "Thick, fluffy American-style pancakes with juicy blueberries. A weekend breakfast favourite.",
             "category": "Breakfast",
-            "image": "images/pancakes.jpg",
+            "image": "images/fluffy-blueberry-pancakes.jpg",
             "servings": 4,
             "cooking_time": 30,
             "ingredients": [
@@ -271,7 +271,7 @@
             "title": "Creamy Mushroom Risotto",
             "description": "Slow-stirred arborio rice with earthy mushrooms, white wine and parmesan. Comfort food at its best.",
             "category": "Rice",
-            "image": "images/mushroom-risotto.jpg",
+            "image": "images/creamy-mushroom-risotto.jpg",
             "servings": 4,
             "cooking_time": 45,
             "ingredients": [
@@ -340,7 +340,7 @@
             "title": "Roasted Tomato Soup",
             "description": "Oven-roasted tomatoes give this soup a deep, sweet flavour. Great with a grilled cheese sandwich.",
             "category": "Soup",
-            "image": "images/tomato-soup.jpg",
+            "image": "images/roasted-tomato-soup.jpg",
             "servings": 4,
             "cooking_time": 50,
             "ingredients": [

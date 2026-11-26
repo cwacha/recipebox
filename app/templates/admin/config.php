@@ -56,7 +56,6 @@ $canEdit = $can('config_edit');
             Highlighted settings differ from the shipped defaults. Saving writes <strong>only those differences</strong> to
             <code>config/config.php</code>; every other value keeps coming from <code>defaults/config.php</code>.
             Resetting a field to its default removes it from the local file again.
-            Environment variables (<code>RECIPES_*</code>) take precedence over the file.
         </div>
     </div>
 

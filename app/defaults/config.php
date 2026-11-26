@@ -14,7 +14,7 @@ declare(strict_types=1);
 return [
     // URL under which public/ is served: '' for a document root, or a prefix such as
     // "/~user/recipebox/public". null (the default) detects it from the request, which is what you want
-    // for the PHP built-in server and normal Apache/nginx setups. Set RECIPES_BASE_URL to make it explicit,
+    // for the PHP built-in server and normal Apache/nginx setups. Set base_url to make it explicit,
     // e.g. behind a reverse proxy that strips a prefix.
     'base_url' => null,
 

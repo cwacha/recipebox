@@ -141,7 +141,7 @@ final class ImageImportTest extends TestCase
         self::assertFileDoesNotExist($this->root . '/public/images/b.png');
     }
 
-    public function testDefaultAndHandPlacedImagesAreNeverDeleted(): void
+    public function testImagesAreDeletedWithTheirRecipeButHandPlacedOnesStay(): void
     {
         $recipes = $this->import([
             $this->recipe('Spaghetti Carbonara', 'images/carbonara.jpg'),
@@ -153,8 +153,8 @@ final class ImageImportTest extends TestCase
             self::assertSame(204, $this->call('DELETE', '/api/recipes/' . $recipe['id'])['status']);
         }
 
-        self::assertFileExists($this->root . '/public/images/carbonara.jpg', 'different name than the slug');
-        self::assertFileExists($this->root . '/public/images/greek-salad.jpg', 'named like the slug, but a default image');
+        self::assertFileDoesNotExist($this->root . '/public/images/carbonara.jpg', 'a default image of a deleted recipe');
+        self::assertFileDoesNotExist($this->root . '/public/images/greek-salad.jpg', 'a default image named like the deleted recipe');
         self::assertFileExists($this->root . '/public/images/mine.jpg', 'a file you placed yourself under another name');
     }
 

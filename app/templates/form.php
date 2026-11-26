@@ -98,9 +98,7 @@ $cancel = $recipe ? $url('/recipes/' . $recipe->slug) : $url('/');
                     <?php endforeach; ?>
                 </div>
                 <div class="invalid-feedback d-block" id="f-steps-error"></div>
-                <div class="text-end">
-                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addStep"><i class="bi bi-plus"></i> Add step</button>
-                </div>
+                <button type="button" class="btn btn-sm btn-outline-primary mt-2 step-add" id="addStep"><i class="bi bi-plus"></i> Add step</button>
             </div>
 
             <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">

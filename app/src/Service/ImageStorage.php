@@ -122,9 +122,9 @@ final class ImageStorage
     }
 
     /**
-     * Deletes an image that belongs to a recipe. Only files this application created are removed:
-     * uploads, and downloaded images that are named after the recipe's slug. The default images, files you
-     * placed in the images folder yourself, and URLs are never touched.
+     * Deletes an image that belongs to a recipe. Only files this application manages are removed: uploads,
+     * downloaded images named after the recipe's slug, and the default images copied from the seed folder.
+     * Other files you placed in the images folder yourself and URLs are never touched.
      */
     public function remove(?string $path, string $ownerSlug = ''): void
     {
@@ -143,12 +143,16 @@ final class ImageStorage
             return true;
         }
 
-        if ($ownerSlug === '' || preg_match('#^' . self::DOWNLOAD_DIR . '/([^/]+)\.(?:jpg|png|webp|gif)$#', $path, $m) !== 1) {
+        if (preg_match('#^' . self::DOWNLOAD_DIR . '/([^/]+)\.(?:jpg|png|webp|gif)$#', $path, $m) !== 1) {
             return false;
         }
 
-        $isOwnName = preg_match('/^' . preg_quote($ownerSlug, '/') . '(?:-\d+)?$/', $m[1]) === 1;
+        // A default image was copied from the seed folder when the installation was set up. It belongs to the
+        // recipe that uses it just like a downloaded image, even though its name is not derived from the slug.
+        if ($this->defaultsDir !== '' && file_exists($this->defaultsDir . '/images/' . basename($path))) {
+            return true;
+        }
 
-        return $isOwnName && !($this->defaultsDir !== '' && file_exists($this->defaultsDir . '/images/' . basename($path)));
+        return preg_match('/^' . preg_quote($ownerSlug, '/') . '(?:-\d+)?$/', $m[1]) === 1;
     }
 }
