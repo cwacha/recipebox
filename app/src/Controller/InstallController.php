@@ -20,35 +20,6 @@ use RuntimeException;
  */
 final class InstallController extends AbstractController
 {
-    /** The settings offered during setup. Everything else keeps its shipped default. */
-    private const SECTIONS = [
-        [
-            'title' => 'Storage',
-            'icon' => 'bi-hdd',
-            'keys' => ['storage'],
-        ],
-        [
-            'title' => 'Address',
-            'icon' => 'bi-link-45deg',
-            'keys' => ['base_url'],
-        ],
-        [
-            'title' => 'Access',
-            'icon' => 'bi-shield-lock',
-            'keys' => ['auth_enabled', 'auth_guest_account', 'auth_min_password_length'],
-        ],
-        [
-            'title' => 'Imports',
-            'icon' => 'bi-cloud-download',
-            'keys' => ['import_allow_private_hosts'],
-        ],
-        [
-            'title' => 'Import from a URL (AI, optional)',
-            'icon' => 'bi-stars',
-            'keys' => ['llm_endpoint', 'llm_model', 'llm_api_key'],
-        ],
-    ];
-
     public function __construct(
         private readonly string $templateDir,
         private readonly ConfigStore $configStore,
@@ -118,16 +89,14 @@ final class InstallController extends AbstractController
      */
     private function form(Request $request, array $values, array $defaults, array $errors, int $status = 200): Response
     {
+        // The same groups as Administration -> Configuration, generated from defaults/config.php.
         $sections = [];
-        foreach (self::SECTIONS as $section) {
+        foreach (ConfigSchema::groups(array_keys($defaults)) as $group) {
             $fields = [];
-            foreach ($section['keys'] as $key) {
-                if (!array_key_exists($key, $defaults)) {
-                    continue;
-                }
-
+            foreach ($group['keys'] as $key) {
                 $default = $defaults[$key];
                 $meta = ConfigSchema::describe($key, $default);
+
                 if ($key === 'storage' && !extension_loaded('pdo_sqlite')) {
                     $meta['choices'] = array_values(array_filter(
                         $meta['choices'],
@@ -147,9 +116,12 @@ final class InstallController extends AbstractController
                 ];
             }
 
-            if ($fields !== []) {
-                $sections[] = $section + ['fields' => $fields];
-            }
+            $sections[] = [
+                'title' => $group['label'],
+                'icon' => $group['icon'],
+                'keys' => $group['keys'],
+                'fields' => $fields,
+            ];
         }
 
         return $this->page($request, 'install/config', [

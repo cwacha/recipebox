@@ -120,7 +120,7 @@ $canEdit = $can('config_edit');
                             <?php elseif ($meta['type'] === 'textarea'): ?>
                                 <textarea class="form-control font-monospace<?= $invalid ?>" id="<?= $e($id) ?>" name="config[<?= $e($key) ?>]" rows="<?= $key === 'llm_prompt' ? 8 : 4 ?>"<?= $meta['placeholder'] !== '' ? ' placeholder="' . $e($meta['placeholder']) . '"' : '' ?>><?= $e((string) $value) ?></textarea>
                             <?php elseif ($meta['type'] === 'int'): ?>
-                                <input class="form-control<?= $invalid ?>" type="number" step="1" id="<?= $e($id) ?>" name="config[<?= $e($key) ?>]" value="<?= $e((string) $value) ?>"<?= $meta['min'] !== null ? ' min="' . $meta['min'] . '"' : '' ?><?= $meta['max'] !== null ? ' max="' . $meta['max'] . '"' : '' ?>>
+                                <input class="form-control<?= $invalid ?>" type="number" step="1" id="<?= $e($id) ?>" name="config[<?= $e($key) ?>]" value="<?= $e((string) $value) ?>"<?= $meta['placeholder'] !== '' ? ' placeholder="' . $e($meta['placeholder']) . '"' : '' ?><?= $meta['min'] !== null ? ' min="' . $meta['min'] . '"' : '' ?><?= $meta['max'] !== null ? ' max="' . $meta['max'] . '"' : '' ?>>
                             <?php elseif ($meta['type'] === 'password'): ?>
                                 <input class="form-control font-monospace<?= $invalid ?>" type="password" autocomplete="new-password" id="<?= $e($id) ?>" name="config[<?= $e($key) ?>]" value="" placeholder="<?= $e($value === '' ? 'No value stored' : 'A value is stored; leave empty to keep it') ?>">
                                 <input type="hidden" name="config[<?= $e($key) ?>__clear]" value="0">

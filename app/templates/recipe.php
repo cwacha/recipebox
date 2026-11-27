@@ -31,7 +31,7 @@ $src = $img($recipe->image);
     </nav>
 
     <div class="d-flex flex-wrap gap-2 justify-content-between align-items-start mb-3">
-        <div>
+        <div class="d-flex flex-wrap align-items-center gap-2">
             <span class="meta-pill"><i class="bi bi-clock"></i> <?= $e($minutes($recipe->cookingTime)) ?></span>
             <span class="meta-pill"><i class="bi bi-people"></i> <?= $servings ?> servings</span>
             <span class="meta-pill"><i class="bi bi-list-ol"></i> <?= count($recipe->steps) ?> steps</span>

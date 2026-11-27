@@ -1,7 +1,7 @@
 <?php
 /**
- * Initial configuration. Only the settings that matter for a fresh installation are shown; all
- * other settings keep their shipped defaults and can be changed later in Administration -> Configuration.
+ * Initial configuration, generated from defaults/config.php exactly like Administration -> Configuration.
+ * Every setting that exists in the defaults is rendered here; the sections come from ConfigSchema::groups().
  *
  * @var \Closure $e
  * @var \Closure $url
@@ -66,10 +66,19 @@
                                             <option value="<?= $e($choice['key']) ?>"<?= $value === $choice['value'] ? ' selected' : '' ?>><?= $e($choice['label']) ?></option>
                                         <?php endforeach; ?>
                                     </select>
+                                <?php elseif ($meta['type'] === 'textarea'): ?>
+                                    <textarea class="form-control font-monospace<?= $invalid ?>" id="<?= $e($id) ?>" name="config[<?= $e($key) ?>]" rows="<?= $key === 'llm_prompt' ? 8 : 4 ?>"<?= $meta['placeholder'] !== '' ? ' placeholder="' . $e($meta['placeholder']) . '"' : '' ?>><?= $e((string) $value) ?></textarea>
                                 <?php elseif ($meta['type'] === 'int'): ?>
-                                    <input class="form-control<?= $invalid ?>" type="number" step="1" id="<?= $e($id) ?>" name="config[<?= $e($key) ?>]" value="<?= $e((string) $value) ?>"<?= $meta['min'] !== null ? ' min="' . $meta['min'] . '"' : '' ?><?= $meta['max'] !== null ? ' max="' . $meta['max'] . '"' : '' ?>>
+                                    <input class="form-control<?= $invalid ?>" type="number" step="1" id="<?= $e($id) ?>" name="config[<?= $e($key) ?>]" value="<?= $e((string) $value) ?>"<?= $meta['placeholder'] !== '' ? ' placeholder="' . $e($meta['placeholder']) . '"' : '' ?><?= $meta['min'] !== null ? ' min="' . $meta['min'] . '"' : '' ?><?= $meta['max'] !== null ? ' max="' . $meta['max'] . '"' : '' ?>>
                                 <?php elseif ($meta['type'] === 'password'): ?>
                                     <input class="form-control font-monospace<?= $invalid ?>" type="password" autocomplete="new-password" id="<?= $e($id) ?>" name="config[<?= $e($key) ?>]" value="" placeholder="<?= $e($value === '' ? 'No value stored' : 'A value is stored; leave empty to keep it') ?>">
+                                    <input type="hidden" name="config[<?= $e($key) ?>__clear]" value="0">
+                                    <?php if ($value !== ''): ?>
+                                        <div class="form-check mt-2">
+                                            <input class="form-check-input" type="checkbox" id="<?= $e($id) ?>-clear" name="config[<?= $e($key) ?>__clear]" value="1">
+                                            <label class="form-check-label" for="<?= $e($id) ?>-clear">Remove the stored value</label>
+                                        </div>
+                                    <?php endif; ?>
                                 <?php else: ?>
                                     <?php if ($meta['nullable']): ?>
                                         <input type="hidden" name="config[<?= $e($key) ?>__null]" value="0">

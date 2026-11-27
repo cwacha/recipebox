@@ -20,8 +20,9 @@ namespace App\Config;
  * configuration page working when a new setting is added to defaults/config.php.
  *
  * String and textarea entries should set "_placeholder": it is shown in the empty field as an
- * example of the expected value (the password control has its own hint). A string without
- * "_allow_empty" falls back to its shipped default when it is cleared.
+ * example of the expected value (the password control has its own hint). Integer entries use their
+ * default value as the placeholder. A string without "_allow_empty" falls back to its shipped
+ * default when it is cleared.
  */
 final class ConfigSchema
 {
@@ -203,7 +204,7 @@ final class ConfigSchema
             'max' => isset($meta['_max']) ? (int) $meta['_max'] : null,
             'label' => (string) ($meta['_label'] ?? ucfirst(str_replace('_', ' ', $key))),
             'description' => (string) ($meta['_description'] ?? ''),
-            'placeholder' => (string) ($meta['_placeholder'] ?? ''),
+            'placeholder' => (string) ($meta['_placeholder'] ?? (is_int($default) ? (string) $default : '')),
         ];
     }
 

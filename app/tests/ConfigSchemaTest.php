@@ -66,7 +66,18 @@ final class ConfigSchemaTest extends TestCase
     public function testPlaceholdersAreExposedAsPlainText(): void
     {
         self::assertSame('recipes.json', ConfigSchema::describe('json_file', 'recipes.json')['placeholder']);
-        self::assertSame('', ConfigSchema::describe('llm_timeout', 60)['placeholder']);
+        self::assertSame('60', ConfigSchema::describe('llm_timeout', 60)['placeholder']);
+    }
+
+    public function testNumericSettingsUseTheirDefaultAsPlaceholder(): void
+    {
+        $defaults = require BASEDIR . '/defaults/config.php';
+
+        foreach ($defaults as $key => $default) {
+            if (is_int($default)) {
+                self::assertSame((string) $default, ConfigSchema::describe((string) $key, $default)['placeholder'], (string) $key);
+            }
+        }
     }
 
     public function testChoiceValuesKeepTheirType(): void

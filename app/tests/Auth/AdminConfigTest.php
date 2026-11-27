@@ -43,6 +43,7 @@ final class AdminConfigTest extends AuthWebTestCase
         self::assertStringContainsString('Authentication and access control', $body);
         self::assertStringContainsString('Save configuration', $body);
         self::assertStringContainsString('Everything uses the shipped defaults', $body);
+        self::assertStringContainsString('placeholder="120"', $body);
     }
 
     public function testPlaceholdersAreShownOnStringAndTextareaControls(): void

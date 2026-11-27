@@ -326,7 +326,6 @@ mark {
     padding: .35rem .9rem;
     font-weight: 600;
     font-size: .9rem;
-    margin-right: .4rem;
 }
 
 [data-bs-theme="dark"] .meta-pill {
