@@ -61,7 +61,8 @@ return [
     // llm_endpoint is set. It speaks the OpenAI-compatible chat completions format:
     // POST {"model": ..., "messages": [{"role": "user", "content": ...}]} with "Authorization: Bearer <key>".
     // The application downloads the page itself (with the same safety rules as image import) and puts its HTML
-    // into the prompt at {html}; if the placeholder is missing the HTML is appended. {url} is replaced too.
+    // into the prompt at {html}; if the placeholder is missing the HTML is appended. {url} is replaced too. If the
+    // download fails, the URL is inserted instead, for models that can open pages themselves.
     // The key never reaches the browser.
     'llm_endpoint' => '',
     'llm_api_key' => '',

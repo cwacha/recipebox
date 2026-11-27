@@ -8,7 +8,8 @@ use App\Validation\RecipeValidator;
 
 /**
  * Downloads a web page and asks an LLM to turn its HTML into one recipe. The prompt may contain {html} and {url};
- * the HTML is inserted there, or appended to the prompt when {html} is missing.
+ * the HTML is inserted there, or appended to the prompt when {html} is missing. When the download failed, the URL
+ * is inserted instead, so a model with web access can open the page itself.
  *
  * The two halves are separate methods because the import page downloads the page in one request and asks the
  * model in the next: slow model calls behind a buffering proxy cannot report progress, so the browser needs a
@@ -17,7 +18,7 @@ use App\Validation\RecipeValidator;
 final class LlmRecipeExtractor implements RecipeExtractor
 {
     public const DEFAULT_PROMPT = <<<'PROMPT'
-You are a recipe extraction service. The HTML source of the web page is included below. Return its cooking recipe as one JSON object. Return JSON only, without markdown fences or commentary.
+You are a recipe extraction service. The HTML source of the web page or its URL are included below. Return its cooking recipe as one JSON object. Return JSON only, without markdown fences or commentary.
 
 The object must have these keys:
 - "title": the recipe name (string, required)
@@ -25,13 +26,14 @@ The object must have these keys:
 - "category": for example "Soup", "Main course" or "Dessert" (string, may be empty)
 - "image": the absolute URL of the main photo (string, empty if there is none)
 - "cooking_time": the total preparation and cooking time in whole minutes (integer, required, at least 1)
-- "ingredients": an array of objects with "quantity" and "name" (required)
+- "ingredients": an array of objects with separate "quantity" and "name" (required)
 - "steps": an array of instruction strings (required)
 - "tags": an array of short lowercase strings such as "vegetarian" or "italian"
 
 Ignore navigation, advertisements and other page furniture. Use only information from the page; do not invent ingredients or steps. If the page is not a recipe, return {"error":"not a recipe"}.
 
-The page HTML follows:
+The web page source or URL follows:
+
 {html}
 PROMPT;
 
@@ -54,9 +56,17 @@ PROMPT;
 
         // {url} is replaced first so that nothing inside the HTML can be taken for a placeholder
         $request = str_replace('{url}', $url, $prompt);
+
+        if (trim($html) === '') {
+            // The application could not download the page; a model with web access may still be able to open it.
+            $html = "Open the page URL yourself and extract the recipe from it.\n";
+            $html .= 'If you cannot open the URL, return {"error":"not a recipe"} instead of guessing.';
+            $html .= "\nURL:\n" . $url;
+        }
+
         $request = str_contains($request, '{html}')
             ? str_replace('{html}', $html, $request)
-            : $request . "\n\nThe web page HTML follows:\n" . $html;
+            : $request . "\n\n" . $html;
 
         $answer = $this->client->complete($request, $cancelled);
 

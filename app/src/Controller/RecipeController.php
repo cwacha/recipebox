@@ -187,14 +187,15 @@ final class RecipeController extends AbstractController
     {
         $url = $this->recipeUrl($request);
         $extractor = $this->extractor();
+        [$html, $warning] = $this->downloadPage($extractor, $url);
 
         try {
-            $recipe = $extractor->extract($extractor->fetch($url), $url);
+            $recipe = $extractor->extract($html, $url);
         } catch (RecipeImportException $e) {
             throw new HttpException(502, 'The recipe could not be read from that URL: ' . $e->getMessage());
         }
 
-        return $this->json(['recipe' => $recipe, 'url' => $url]);
+        return $this->json(['recipe' => $recipe, 'url' => $url, 'warning' => $warning]);
     }
 
     /**
@@ -206,12 +207,7 @@ final class RecipeController extends AbstractController
     {
         $url = $this->recipeUrl($request);
         $extractor = $this->extractor();
-
-        try {
-            $html = $extractor->fetch($url);
-        } catch (RecipeImportException $e) {
-            throw new HttpException(502, 'The page could not be downloaded: ' . $e->getMessage());
-        }
+        [$html, $warning] = $this->downloadPage($extractor, $url);
 
         $token = bin2hex(random_bytes(16));
         $request->session()->set('import_page', [
@@ -221,7 +217,7 @@ final class RecipeController extends AbstractController
             'time' => time(),
         ]);
 
-        return $this->json(['token' => $token, 'url' => $url, 'bytes' => strlen($html)]);
+        return $this->json(['token' => $token, 'url' => $url, 'bytes' => strlen($html), 'warning' => $warning]);
     }
 
     /**
@@ -254,6 +250,24 @@ final class RecipeController extends AbstractController
         return new StreamedJsonResponse(function (Closure $emit) use ($extractor, $page): void {
             $this->streamExtraction($extractor, $page['html'], $page['url'], $emit);
         });
+    }
+
+    /**
+     * Downloads the page for the model. A failure is not fatal: the model gets the URL instead, because some
+     * models can open pages themselves (bot protection often answers 403 to the application, for example).
+     *
+     * @return array{string, ?string} the HTML ('' when the download failed) and a warning for the user
+     */
+    private function downloadPage(RecipeExtractor $extractor, string $url): array
+    {
+        try {
+            return [$extractor->fetch($url), null];
+        } catch (RecipeImportException $e) {
+            $detail = trim(rtrim($e->getMessage(), '.')) ?: 'unknown error';
+
+            return ['', 'The page could not be downloaded: ' . $detail
+                . '. Asking the model to open the URL itself; this only works if the model can browse the web.'];
+        }
     }
 
     /** The URL from the request body, validated for a page that may be downloaded. */

@@ -17,6 +17,8 @@ interface RecipeExtractor
     public function fetch(string $url): string;
 
     /**
+     * @param string                $html      the downloaded page, or '' when it could not be downloaded; the model
+     *                                         is then asked to open $url itself
      * @param callable(): bool|null $cancelled asked while the model is working; true stops the request
      *
      * @return array{title: string, description: string, category: string, image: string, cooking_time: int, ingredients: list<array{quantity: string, name: string}>, steps: list<string>, tags: list<string>}

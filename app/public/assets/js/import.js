@@ -267,6 +267,7 @@
     $('#importUrl').on('input', function () {
         pendingRecipe = null;
         $('#urlImportPreview').addClass('d-none');
+        $('#urlImportWarning').addClass('d-none').empty();
     });
 
     $('#dropzone')
@@ -303,6 +304,7 @@
         const $err = $('#urlImportError').addClass('d-none');
         pendingRecipe = null;
         $('#urlImportPreview').addClass('d-none');
+        $('#urlImportWarning').addClass('d-none').empty();
 
         const url = $.trim(String($('#importUrl').val() || ''));
         if (!/^https?:\/\/\S+$/i.test(url)) {
@@ -323,6 +325,11 @@
         // request until everything is finished.
         postJson('/api/recipes/import/url/page', {url: url}, request.signal)
             .then(function (page) {
+                if (page.warning) {
+                    // the download failed, but the model is still asked with the URL; keep the failed step visible
+                    finishRunningStep('failed');
+                    R.showAlert($('#urlImportWarning'), [page.warning]);
+                }
                 showStep('ask');
                 return readEventsFrom('/api/recipes/import/url/extract', {token: page.token}, request.signal, url);
             })
@@ -388,6 +395,7 @@
         pendingRecipe = null;
         $('#urlImportPreview').addClass('d-none');
         $('#urlImportError').addClass('d-none');
+        $('#urlImportWarning').addClass('d-none').empty();
         $('#importUrl').trigger('focus');
     });
 

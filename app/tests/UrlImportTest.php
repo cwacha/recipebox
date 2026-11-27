@@ -48,8 +48,24 @@ final class UrlImportTest extends TestCase
         self::assertSame(200, $res['status']);
         self::assertSame('Tomato Soup', $res['json']['recipe']['title']);
         self::assertSame('https://example.com/tomato-soup', $res['json']['url']);
+        self::assertNull($res['json']['warning']);
         self::assertSame(['https://example.com/tomato-soup'], $this->extractor->urls);
         self::assertSame([], $this->recipes->all(), 'the preview is not stored');
+    }
+
+    public function testAPreviewContinuesWithoutThePageAndReturnsAWarning(): void
+    {
+        $this->extractor->recipe = $this->recipe();
+        $this->extractor->error = new RecipeImportException('the server answered with HTTP 403.');
+
+        $res = $this->call('POST', '/api/recipes/import/url', ['url' => 'https://example.com/blocked']);
+
+        self::assertSame(200, $res['status']);
+        self::assertSame('Tomato Soup', $res['json']['recipe']['title']);
+        self::assertStringContainsString('could not be downloaded', $res['json']['warning']);
+        self::assertStringContainsString('HTTP 403', $res['json']['warning']);
+        self::assertSame([''], $this->extractor->htmls, 'the model is asked without a page');
+        self::assertSame(['https://example.com/blocked'], $this->extractor->extractUrls);
     }
 
     public function testAConfirmedPreviewIsImported(): void
@@ -78,7 +94,7 @@ final class UrlImportTest extends TestCase
 
     public function testAServiceFailureBecomesBadGateway(): void
     {
-        $this->extractor->error = new RecipeImportException('the page does not contain a recipe');
+        $this->extractor->extractError = new RecipeImportException('the page does not contain a recipe');
 
         $res = $this->call('POST', '/api/recipes/import/url', ['url' => 'https://example.com/article']);
 
@@ -121,6 +137,7 @@ final class UrlImportTest extends TestCase
 
         self::assertSame('https://example.com/soup', $page['url']);
         self::assertSame(strlen('<html>Tomato Soup</html>'), $page['bytes']);
+        self::assertNull($page['warning']);
         self::assertSame(['https://example.com/soup'], $this->extractor->urls);
         self::assertSame([], $this->extractor->htmls, 'the model is not asked yet');
 
@@ -131,18 +148,31 @@ final class UrlImportTest extends TestCase
         self::assertSame('Tomato Soup', $done['recipe']['title']);
         self::assertSame('https://example.com/soup', $done['url']);
         self::assertSame(['<html>Tomato Soup</html>'], $this->extractor->htmls, 'the downloaded page reaches the model');
+        self::assertSame(['https://example.com/soup'], $this->extractor->extractUrls);
         self::assertSame([], $this->recipes->all(), 'the preview is not stored');
     }
 
-    public function testAPageDownloadFailureIsReportedBeforeTheModelIsAsked(): void
+    public function testAPageDownloadFailureStillAsksTheModelWithTheUrl(): void
     {
-        $this->extractor->error = new RecipeImportException('the server answered with HTTP 404.');
+        $this->extractor->recipe = $this->recipe();
+        $this->extractor->error = new RecipeImportException('the server answered with HTTP 403.');
 
-        $res = $this->call('POST', '/api/recipes/import/url/page', ['url' => 'https://example.com/missing']);
+        $page = $this->call('POST', '/api/recipes/import/url/page', ['url' => 'https://example.com/blocked']);
 
-        self::assertSame(502, $res['status']);
-        self::assertStringContainsString('The page could not be downloaded', $res['json']['error']);
-        self::assertSame([], $this->extractor->htmls);
+        self::assertSame(200, $page['status']);
+        self::assertSame('https://example.com/blocked', $page['json']['url']);
+        self::assertSame(0, $page['json']['bytes']);
+        self::assertStringContainsString('The page could not be downloaded', $page['json']['warning']);
+        self::assertStringContainsString('HTTP 403', $page['json']['warning']);
+        self::assertSame([], $this->extractor->htmls, 'the model is not asked yet');
+
+        $events = $this->extract($page['json']['token']);
+        $done = end($events);
+
+        self::assertSame('done', $done['event']);
+        self::assertSame('Tomato Soup', $done['recipe']['title']);
+        self::assertSame([''], $this->extractor->htmls, 'the model is asked without the page');
+        self::assertSame(['https://example.com/blocked'], $this->extractor->extractUrls);
     }
 
     public function testAModelFailureIsReportedAsAnErrorEvent(): void
@@ -271,6 +301,8 @@ final class FakeRecipeExtractor implements RecipeExtractor
     public array $urls = [];
     /** @var list<string> */
     public array $htmls = [];
+    /** @var list<string> */
+    public array $extractUrls = [];
     /** @var array<string, mixed>|null */
     public ?array $recipe = null;
     public string $html = '<html>a recipe page</html>';
@@ -292,6 +324,7 @@ final class FakeRecipeExtractor implements RecipeExtractor
     public function extract(string $html, string $url, ?callable $cancelled = null): array
     {
         $this->htmls[] = $html;
+        $this->extractUrls[] = $url;
 
         if ($this->extractError !== null) {
             throw $this->extractError;

@@ -85,7 +85,7 @@ final class ConfigSchema
         'llm_prompt' => [
             'textarea',
             '_label' => 'LLM prompt',
-            '_description' => '{html} is replaced with the page source and {url} with the address. Without {html} the HTML is appended.',
+            '_description' => '{html} is replaced with the page source and {url} with the address. Without {html} the HTML is appended. If the page cannot be downloaded, the URL is inserted at {html}.',
             '_placeholder' => 'Turn this web page into a recipe. Make no mistakes! Page source: {html}',
         ],
         'llm_timeout' => [

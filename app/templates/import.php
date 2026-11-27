@@ -26,6 +26,7 @@
             </p>
 
             <div class="alert alert-danger d-none" id="urlImportError"></div>
+            <div class="alert alert-warning d-none" id="urlImportWarning"></div>
 
             <form class="d-flex flex-column flex-sm-row gap-2" id="urlImportForm" novalidate>
                 <label class="visually-hidden" for="importUrl">Recipe URL</label>

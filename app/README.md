@@ -242,13 +242,17 @@ The import page can ask an external LLM to read a recipe from a web page. Set th
 | `llm_endpoint` | OpenAI-compatible chat completions URL. Empty = feature disabled. |
 | `llm_api_key` | Sent as `Authorization: Bearer …`; may be empty for local services. It never reaches the browser. |
 | `llm_model` | Model name, default `gpt-4o-mini`. |
-| `llm_prompt` | Instruction for the model. `{html}` is replaced with the page source, `{url}` with the address; a prompt without `{html}` gets the HTML appended. |
+| `llm_prompt` | Instruction for the model. `{html}` is replaced with the page source, `{url}` with the address; a prompt without `{html}` gets the HTML appended. When the page cannot be downloaded, the URL is inserted instead. |
 | `llm_timeout` | Request timeout in seconds, default 60. |
 
 The application downloads the page itself and sends its HTML inside the prompt, so any chat-completions model can be
 used — the model does not have to be able to open URLs. The download follows the same safety rules as image import
 (http(s) only on ports 80/443, no credentials in the URL, no private/loopback addresses unless
 `import_allow_private_hosts` is enabled, at most 4 MB, redirects followed manually).
+
+When the download fails (a site may answer `403` to automated requests, for example), the import does not stop: the
+page shows a warning and the model is asked with the URL embedded instead, so a model with web access can open the
+page itself. Models without web access will normally answer that the page is not a recipe.
 
 The endpoint answers with one recipe as JSON. The answer is validated with the same rules as a JSON import, then shown
 as a preview. **Nothing is stored during the preview:** after confirming, the browser sends the preview to
@@ -400,8 +404,8 @@ Use HTTP Basic, or a session with the `X-CSRF-Token` header.
 | POST | `/api/recipes` | create |
 | GET / PUT / DELETE | `/api/recipes/{id}` | read / update / delete (the API uses the internal id) |
 | POST | `/api/recipes/import` | bulk import; response includes `warnings` |
-| POST | `/api/recipes/import/url` | LLM preview for `{"url": "https://…"}` in one request; nothing is saved |
-| POST | `/api/recipes/import/url/page` | downloads the page and keeps it for the next call; returns `{"token": "…", "url": "…", "bytes": 1234}` |
+| POST | `/api/recipes/import/url` | LLM preview for `{"url": "https://…"}` in one request; nothing is saved; `warning` is set when the page could not be downloaded |
+| POST | `/api/recipes/import/url/page` | downloads the page and keeps it for the next call; returns `{"token": "…", "url": "…", "bytes": 1234, "warning": null}` |
 | POST | `/api/recipes/import/url/extract` | asks the model about the page of a token; NDJSON events (`ping`, `done`, `error`), nothing is saved |
 | GET | `/api/recipes/export`, `/api/recipes/{id}/export` | JSON download |
 | POST | `/api/uploads` | multipart image upload (`image`) → `{"path": "uploads/…"}` |

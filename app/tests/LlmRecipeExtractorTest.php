@@ -87,6 +87,47 @@ final class LlmRecipeExtractorTest extends TestCase
         self::assertSame([], $client->prompts, 'the model is not asked without a page');
     }
 
+    public function testAnEmptyPageAsksTheModelToOpenTheUrl(): void
+    {
+        $client = new FakeLlmClient(json_encode($this->recipe()));
+        $extractor = new LlmRecipeExtractor($client, new FakePageFetcher(self::HTML), new RecipeValidator());
+
+        $extractor->extract('', 'https://example.com/blocked');
+
+        self::assertStringContainsString('could not download the page', $client->prompts[0]);
+        self::assertStringContainsString('https://example.com/blocked', $client->prompts[0]);
+        self::assertStringContainsString('instead of guessing', $client->prompts[0]);
+        self::assertStringNotContainsString('{html}', $client->prompts[0]);
+        self::assertStringNotContainsString('{url}', $client->prompts[0]);
+    }
+
+    public function testAnEmptyPageDoesNotRepeatAUrlThatThePromptAlreadyContains(): void
+    {
+        $client = new FakeLlmClient(json_encode($this->recipe()));
+        $extractor = new LlmRecipeExtractor(
+            $client,
+            new FakePageFetcher(self::HTML),
+            new RecipeValidator(),
+            'Extract the recipe from {url}. Page: {html}',
+        );
+
+        $extractor->extract('', 'https://example.com/blocked');
+
+        self::assertSame(1, substr_count($client->prompts[0], 'https://example.com/blocked'));
+        self::assertStringContainsString('could not download the page', $client->prompts[0]);
+    }
+
+    public function testAnEmptyPageGetsTheUrlAppendedWithoutAHtmlPlaceholder(): void
+    {
+        $client = new FakeLlmClient(json_encode($this->recipe()));
+        $extractor = new LlmRecipeExtractor($client, new FakePageFetcher(self::HTML), new RecipeValidator(), 'Extract a recipe.');
+
+        $extractor->extract('', 'https://example.com/blocked');
+
+        self::assertStringStartsWith("Extract a recipe.\n\n", $client->prompts[0]);
+        self::assertStringContainsString('https://example.com/blocked', $client->prompts[0]);
+    }
+
     public function testFetchOnlyDownloadsThePage(): void
     {
         $client = new FakeLlmClient(json_encode($this->recipe()));
