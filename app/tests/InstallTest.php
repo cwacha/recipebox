@@ -42,6 +42,7 @@ final class InstallTest extends TestCase
 
         self::assertSame(200, $response->status());
         self::assertStringContainsString('Welcome to Recipe Box', $response->body());
+        self::assertStringContainsString('Version ' . trim((string) file_get_contents(BASEDIR . '/VERSION')), $response->body());
         self::assertStringContainsString('PHP extensions', $response->body());
         self::assertStringContainsString('Directories', $response->body());
         self::assertStringContainsString('Continue', $response->body());

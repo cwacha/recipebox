@@ -1,7 +1,9 @@
 <?php
+
 /**
  * @var \Closure $e
  * @var \Closure $url
+ * @var string $version
  * @var array{ok: bool, php: string, groups: list<array{title: string, icon: string, checks: list<array{label: string, detail: string, help: string, ok: bool, required: bool}>}>} $report
  */
 ?>
@@ -10,6 +12,9 @@
         <div class="text-center mb-4">
             <div class="display-5">🍳</div>
             <h1 class="recipe-title h2 mt-2">Welcome to Recipe Box</h1>
+            <?php if ($version !== ''): ?>
+                <p class="text-body-secondary small mb-2">Version <?= $e($version) ?></p>
+            <?php endif; ?>
             <p class="text-body-secondary mb-0">
                 This installation is not configured yet. Let's check that this server can run the application.
             </p>
@@ -50,10 +55,10 @@
                                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                                     <span class="fw-semibold"><?= $e($check['label']) ?></span>
                                     <span>
-                                        <span class="badge <?= $badge ?>"><?= $e($check['detail']) ?></span>
                                         <?php if (!$check['required']): ?>
                                             <span class="badge text-bg-light border">optional</span>
                                         <?php endif; ?>
+                                        <span class="badge <?= $badge ?>"><?= $e($check['detail']) ?></span>
                                     </span>
                                 </div>
                                 <?php if ($check['help'] !== ''): ?>

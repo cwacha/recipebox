@@ -158,7 +158,7 @@ final class Application
      */
     private function handleInstall(Request $request): Response
     {
-        $installer = new InstallController(BASEDIR . '/templates', $this->configStore, new Requirements());
+        $installer = new InstallController(BASEDIR . '/templates', $this->configStore, new Requirements(), $this->version);
         $path = $request->path === '/' ? '/' : rtrim($request->path, '/');
 
         if ($request->method === 'POST' && $path === '/install/config') {

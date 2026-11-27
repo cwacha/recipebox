@@ -53,6 +53,7 @@ final class InstallController extends AbstractController
         private readonly string $templateDir,
         private readonly ConfigStore $configStore,
         private readonly Requirements $requirements = new Requirements(),
+        private readonly string $version = '',
     ) {
     }
 
@@ -60,6 +61,7 @@ final class InstallController extends AbstractController
     {
         return $this->page($request, 'install/check', [
             'report' => $this->requirements->run(),
+            'version' => $this->version,
             'step' => 'check',
         ], 'Setup – Recipe Box');
     }

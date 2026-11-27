@@ -23,9 +23,12 @@ if (!is_file($autoload)) {
     }
     $url = static fn (string $path = '/'): string => $basePath . $path;
     $asset = static fn (string $path): string => $path;
+    $versionFile = $basedir . '/VERSION';
+    $version = is_file($versionFile) ? file_get_contents($versionFile) : false;
+    $version = $version === false ? 'dev' : trim($version);
     $title = 'Setup – Recipe Box';
     $step = 'check';
-    $content = (static function () use ($report, $e, $url): string {
+    $content = (static function () use ($report, $e, $url, $basedir, $version): string {
         ob_start();
         require $basedir . '/templates/install/check.php';
 
