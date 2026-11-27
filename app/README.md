@@ -16,7 +16,7 @@ Open <http://localhost:8000>. A fresh installation opens the setup (see *First s
 **`admin` / `admin`**. You are taken to the password page right away:
 **change this default password before the application is reachable by anybody else.** Run the tests with `composer test`.
 
-Requirements: PHP 8.2+ with `json`, `fileinfo`, `mbstring` and `curl` (plus `pdo_sqlite` for SQLite storage, `intl` is used for slugs when present), Composer. Bootstrap, Bootstrap Icons, jQuery and the web fonts
+Requirements: PHP 8.2+ with `json`, `fileinfo`, `zip`, `mbstring` and `curl` (plus `pdo_sqlite` for SQLite storage, `intl` is used for slugs when present), Composer. Bootstrap, Bootstrap Icons, jQuery and the web fonts
 are bundled under `public/assets/vendor/`, so the browser needs no internet access.
 
 On Apache, point the document root at `public/` (`.htaccess` is included) and allow `.htaccess` overrides
@@ -219,9 +219,9 @@ php bin/account create anna editor,reader
 - Every recipe has its own page and URL that can be bookmarked or shared
 - Every recipe shows ingredients for **4 people**, the cooking time and numbered steps; tap ingredients and steps to tick them off while cooking
 - Create / edit recipes in a form, with picture upload or image URL (downloaded and saved with the recipe), reorderable steps
-- **Import JSON** (file, drag & drop or paste) – a single recipe, a list, or `{"recipes": [...]}`; all-or-nothing validation. Pictures that are links to other servers are downloaded into `public/images/`, so imported recipes are self-contained (see below)
+- **Import JSON or a Recipe Box ZIP** (file, drag & drop or paste JSON) – a single recipe, a list, or `{"recipes": [...]}`; all-or-nothing validation. A ZIP exported by the application contains `recipes.json` plus its pictures and can be imported on another installation; optionally it can replace all existing recipes and pictures first. Pictures that are links to other servers are downloaded into `public/images/`, so imported recipes are self-contained (see below)
 - **Import from a URL (AI)** – paste a recipe page; a configurable OpenAI-compatible LLM extracts it and shows a preview, with the running steps and a timer, and nothing is saved until you confirm it
-- Export one recipe or all recipes as JSON (same format the import accepts)
+- Export one recipe as JSON, or all recipes as a ZIP with `recipes.json` and their pictures (the ZIP can be imported again)
 - Print view, dark mode, responsive layout
 
 ### Import from a URL (AI)
@@ -404,8 +404,10 @@ Use HTTP Basic, or a session with the `X-CSRF-Token` header.
 | POST | `/api/recipes` | create |
 | GET / PUT / DELETE | `/api/recipes/{id}` | read / update / delete (the API uses the internal id) |
 | POST | `/api/recipes/import` | bulk import; response includes `warnings` |
+| POST | `/api/recipes/import/archive` | multipart ZIP import (`archive`) written by the export; `replace=1` clears all existing recipes first (needs `recipe_delete`); response includes `warnings` |
 | POST | `/api/recipes/import/url` | LLM preview for `{"url": "https://…"}` in one request; nothing is saved; `warning` is set when the page could not be downloaded |
 | POST | `/api/recipes/import/url/page` | downloads the page and keeps it for the next call; returns `{"token": "…", "url": "…", "bytes": 1234, "warning": null}` |
 | POST | `/api/recipes/import/url/extract` | asks the model about the page of a token; NDJSON events (`ping`, `done`, `error`), nothing is saved |
-| GET | `/api/recipes/export`, `/api/recipes/{id}/export` | JSON download |
+| GET | `/api/recipes/export` | ZIP download with `recipes.json` and the pictures |
+| GET | `/api/recipes/{idOrSlug}/export` | JSON download of one recipe (internal id or readable slug) |
 | POST | `/api/uploads` | multipart image upload (`image`) → `{"path": "uploads/…"}` |

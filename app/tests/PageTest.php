@@ -66,6 +66,18 @@ final class PageTest extends TestCase
         self::assertSame(200, $this->get('/import')->status());
     }
 
+    public function testSingleRecipeExportLinkUsesTheSlug(): void
+    {
+        $body = $this->get('/recipes/' . $this->slug)->body();
+        self::assertStringContainsString('/api/recipes/' . $this->slug . '/export', $body);
+        self::assertStringNotContainsString('/api/recipes/' . $this->id . '/export', $body);
+
+        $response = $this->get('/api/recipes/' . $this->slug . '/export');
+        self::assertSame(200, $response->status());
+        self::assertSame('attachment; filename="soup-b-of-the-day-b.json"', $response->headers()['Content-Disposition']);
+        self::assertSame('Soup <b>of the day</b>', json_decode($response->body(), true)['title']);
+    }
+
     public function testOldIdUrlsRedirectToTheReadableUrl(): void
     {
         $show = $this->get('/recipes/' . $this->id);

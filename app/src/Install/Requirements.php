@@ -66,6 +66,7 @@ final class Requirements
                     $this->extension('json', 'JSON'),
                     $this->extension('curl', 'cURL'),
                     $this->extension('fileinfo', 'File information'),
+                    $this->extension('zip', 'ZIP archives'),
                     $this->extension('mbstring', 'Multibyte strings'),
                     $this->extension('session', 'Sessions'),
                     $this->extension('pcre', 'Regular expressions (PCRE)'),

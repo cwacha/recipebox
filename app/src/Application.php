@@ -37,6 +37,7 @@ use App\Service\ImageLocalizer;
 use App\Service\ImageStorage;
 use App\Service\LlmRecipeExtractor;
 use App\Service\PageFetcher;
+use App\Service\RecipeArchive;
 use App\Service\RecipeExtractor;
 use App\Service\Seeder;
 use App\Validation\RecipeValidator;
@@ -344,7 +345,8 @@ final class Application
             }
         }
 
-        $recipes = new RecipeController($repository, $validator, $images, $localizer, $extractor);
+        $archive = new RecipeArchive($images);
+        $recipes = new RecipeController($repository, $validator, $images, $localizer, $archive, $extractor);
         $uploads = new UploadController($images);
         $pages = new PageController($repository, $templates, $extractor !== null);
         $auth = new AuthController($this->security, $this->webAuth, $templates, (string) ($this->config['auth']['guest_account'] ?? '') !== '');
@@ -385,6 +387,7 @@ final class Application
             ->add('GET', '/api/recipes', $recipes->index(...), 'show')
             ->add('POST', '/api/recipes', $recipes->store(...), 'recipe_create')
             ->add('POST', '/api/recipes/import', $recipes->import(...), 'recipe_import')
+            ->add('POST', '/api/recipes/import/archive', $recipes->importArchive(...), 'recipe_import')
             ->add('POST', '/api/recipes/import/url', $recipes->importUrl(...), 'recipe_import')
             ->add('POST', '/api/recipes/import/url/page', $recipes->importPage(...), 'recipe_import')
             ->add('POST', '/api/recipes/import/url/extract', $recipes->importExtract(...), 'recipe_import')
@@ -394,7 +397,7 @@ final class Application
             ->add('POST', '/api/recipes/{id}', $recipes->update(...), 'recipe_edit')
             ->add('GET', '/api/recipes/export', $recipes->exportAll(...), 'recipe_export_all')
             ->add('GET', '/api/recipes/{id}', $recipes->show(...), 'show')
-            ->add('GET', '/api/recipes/{id}/export', $recipes->export(...), 'recipe_export')
+            ->add('GET', '/api/recipes/{idOrSlug}/export', $recipes->export(...), 'recipe_export')
             ->add('PUT', '/api/recipes/{id}', $recipes->update(...), 'recipe_edit')
             ->add('DELETE', '/api/recipes/{id}', $recipes->destroy(...), 'recipe_delete')
             ->add('POST', '/api/uploads', $uploads->image(...), 'image_upload');

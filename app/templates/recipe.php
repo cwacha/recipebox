@@ -40,7 +40,7 @@ $src = $img($recipe->image);
             <button type="button" class="btn btn-outline-secondary d-none" id="btnWakeLock" aria-pressed="false"><i class="bi bi-lightbulb"></i> Keep screen on</button>
             <button type="button" class="btn btn-outline-secondary" id="btnPrint"><i class="bi bi-printer"></i> Print</button>
             <?php if ($can('recipe_export')): ?>
-                <a class="btn btn-outline-secondary" href="<?= $e($url('/api/recipes/' . $recipe->id . '/export')) ?>"><i class="bi bi-filetype-json"></i> JSON</a>
+                <a class="btn btn-outline-secondary" href="<?= $e($url('/api/recipes/' . $recipe->slug . '/export')) ?>"><i class="bi bi-filetype-json"></i> JSON</a>
             <?php endif; ?>
             <?php if ($can('/recipes/edit')): ?>
                 <a class="btn btn-primary d-none d-sm-inline-block" href="<?= $e($url('/recipes/' . $recipe->slug . '/edit')) ?>"><i class="bi bi-pencil"></i> Edit</a>

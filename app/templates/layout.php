@@ -58,7 +58,7 @@
                         <a class="btn btn-outline-secondary<?= $active === 'import' ? ' active' : '' ?>" href="<?= $e($url('/import')) ?>"><i class="bi bi-upload"></i> Import</a>
                     <?php endif; ?>
                     <?php if ($can('recipe_export_all')): ?>
-                        <a class="btn btn-outline-secondary" href="<?= $e($url('/api/recipes/export')) ?>"><i class="bi bi-download"></i> Export all</a>
+                        <a class="btn btn-outline-secondary" href="<?= $e($url('/api/recipes/export')) ?>" title="All recipes with pictures as ZIP"><i class="bi bi-file-zip"></i> Export all</a>
                     <?php endif; ?>
                     <?php if ($can('/admin')): ?>
                         <a class="btn btn-outline-secondary<?= $active === 'admin' ? ' active' : '' ?>" href="<?= $e($url('/admin')) ?>"><i class="bi bi-shield-lock"></i> Admin</a>

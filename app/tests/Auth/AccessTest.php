@@ -70,6 +70,7 @@ final class AccessTest extends AuthWebTestCase
             ['PUT', '/api/recipes/' . $this->recipeId, $this->recipePayload()],
             ['DELETE', '/api/recipes/' . $this->recipeId, null],
             ['POST', '/api/recipes/import', [$this->recipePayload()]],
+            ['POST', '/api/recipes/import/archive', null],
             ['POST', '/api/recipes/import/url', ['url' => 'https://example.com/recipe']],
             ['POST', '/api/recipes/import/url/page', ['url' => 'https://example.com/recipe']],
             ['POST', '/api/recipes/import/url/extract', ['token' => 'abc']],
@@ -100,6 +101,20 @@ final class AccessTest extends AuthWebTestCase
         self::assertSame(200, $editor->json('GET', '/api/recipes/export')->status());
         self::assertStringContainsString('filetype-json', $editor->get('/recipes/' . $this->recipeSlug)->body());
         self::assertStringContainsString('Export all', $editor->get('/')->body());
+    }
+
+    public function testClearingAllRecipesNeedsTheDeletePermission(): void
+    {
+        $security = $this->security();
+        $security->saveRole('importer', ['show', '/', '/recipes', '/import', 'recipe_import']);
+        $security->saveAccount('im', ['password' => $this->hash('importpass1')], ['importer']);
+        $this->app = $this->app();
+
+        $browser = $this->loggedIn('im', 'importpass1');
+        $response = $browser->post('/api/recipes/import/archive', ['replace' => '1']);
+
+        self::assertSame(403, $response->status());
+        self::assertStringContainsString('permission', Browser::data($response)['error']);
     }
 
     public function testChangesNeedAValidCsrfToken(): void

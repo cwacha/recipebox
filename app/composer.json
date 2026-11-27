@@ -7,6 +7,7 @@
         "ext-curl": "*",
         "ext-fileinfo": "*",
         "ext-json": "*",
+        "ext-zip": "*",
         "php": ">=8.2"
     },
     "require-dev": {

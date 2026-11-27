@@ -2,6 +2,7 @@
 /**
  * @var \Closure $e
  * @var \Closure $url
+ * @var \Closure $can
  * @var array<string, mixed> $example
  * @var bool $llmImportEnabled
  */
@@ -86,19 +87,28 @@
 
     <section class="card shadow-sm mb-4">
         <div class="card-body">
-            <h2 class="h4 mb-1"><i class="bi bi-filetype-json"></i> From JSON</h2>
+            <h2 class="h4 mb-1"><i class="bi bi-filetype-json"></i> From JSON or ZIP</h2>
             <p class="small text-body-secondary mb-3">
-                Upload a recipe file or paste its JSON below.
+                Upload a recipe file, a ZIP exported by Recipe Box, or paste JSON below.
             </p>
 
             <div class="alert alert-danger d-none" id="importError"></div>
 
             <div class="dropzone" id="dropzone">
                 <i class="bi bi-file-earmark-code"></i>
-                <p class="mb-1">Drop a <code>.json</code> file here or</p>
+                <p class="mb-1">Drop a <code>.json</code> or <code>.zip</code> file here or</p>
                 <label class="btn btn-outline-primary btn-sm mb-0" for="importFile">Choose file</label>
-                <input type="file" id="importFile" accept=".json,application/json" hidden>
+                <input type="file" id="importFile" accept=".json,.zip,application/json,application/zip" hidden>
             </div>
+            <p class="small text-body-secondary mt-2 mb-0 d-none" id="importFileName"></p>
+
+            <?php if ($can('recipe_delete')): ?>
+                <div class="form-check mt-3 d-none" id="replaceWrap">
+                    <input class="form-check-input" type="checkbox" id="importReplace">
+                    <label class="form-check-label" for="importReplace">Clear all existing recipes first</label>
+                    <div class="form-text text-danger">Deletes every existing recipe and its pictures before the archive is imported.</div>
+                </div>
+            <?php endif; ?>
 
             <label class="form-label mt-3" for="importText">Or paste JSON</label>
             <textarea class="form-control font-monospace small" id="importText" rows="8" spellcheck="false" placeholder='{"title": "…"}'></textarea>
@@ -109,6 +119,7 @@
                 <p class="small text-body-secondary mb-0">
                     You can upload one recipe object, a list of recipes or <code>{"recipes": [ … ]}</code>.
                     Ingredients may also be plain strings. <code>image</code> is optional (URL).
+                    A <code>.zip</code> exported with “Export all” contains <code>recipes.json</code> and the pictures.
                 </p>
             </details>
         </div>

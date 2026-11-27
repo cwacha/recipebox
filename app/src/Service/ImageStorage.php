@@ -8,7 +8,7 @@ use App\Exception\HttpException;
 use InvalidArgumentException;
 use RuntimeException;
 
-/** Stores uploaded images below public/uploads and downloaded (imported) images below public/images. */
+/** Stores uploaded and imported images below public/uploads and downloaded images below public/images. */
 final class ImageStorage
 {
     private const MAX_BYTES = 8 * 1024 * 1024;
@@ -105,6 +105,38 @@ final class ImageStorage
         }
 
         throw new RuntimeException('no free file name for the image');
+    }
+
+    /**
+     * Stores picture bytes from an import archive in the uploads folder with a random name, so an archive can
+     * never overwrite an existing file.
+     *
+     * @return string path relative to the public directory, e.g. "uploads/ab12cd34ef.jpg"
+     * @throws InvalidArgumentException when the data is not a supported image
+     */
+    public function storeImported(string $bytes): string
+    {
+        $extension = $this->assertImage($bytes);
+
+        $dir = $this->publicDir . '/' . self::PREFIX;
+        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+            throw new RuntimeException('the upload folder is not writable');
+        }
+
+        $name = bin2hex(random_bytes(10)) . '.' . $extension;
+        $handle = @fopen($dir . $name, 'xb');
+        if ($handle === false) {
+            throw new RuntimeException('the image could not be saved');
+        }
+
+        $written = fwrite($handle, $bytes);
+        fclose($handle);
+        if ($written !== strlen($bytes)) {
+            @unlink($dir . $name);
+            throw new RuntimeException('the image could not be saved');
+        }
+
+        return self::PREFIX . $name;
     }
 
     /**

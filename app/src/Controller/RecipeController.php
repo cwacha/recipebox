@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Exception\HttpException;
 use App\Exception\NotFoundException;
 use App\Exception\ValidationException;
+use App\Http\FileResponse;
 use App\Http\Request;
 use App\Http\Response;
 use App\Http\StreamedJsonResponse;
@@ -15,6 +16,7 @@ use App\Repository\RecipeRepositoryInterface;
 use App\Service\ImageFetchException;
 use App\Service\ImageLocalizer;
 use App\Service\ImageStorage;
+use App\Service\RecipeArchive;
 use App\Service\RecipeExtractor;
 use App\Service\RecipeImportException;
 use App\Validation\RecipeValidator;
@@ -22,11 +24,14 @@ use Closure;
 
 final class RecipeController extends AbstractController
 {
+    private const MAX_ARCHIVE_BYTES = 512 * 1024 * 1024;
+
     public function __construct(
         private readonly RecipeRepositoryInterface $recipes,
         private readonly RecipeValidator $validator,
         private readonly ImageStorage $images,
         private readonly ImageLocalizer $localizer,
+        private readonly RecipeArchive $archive,
         private readonly ?RecipeExtractor $extractor = null,
     ) {
     }
@@ -116,67 +121,158 @@ final class RecipeController extends AbstractController
      */
     public function import(Request $request): Response
     {
-        $payload = $request->json();
-        if (isset($payload['recipes']) && is_array($payload['recipes'])) {
-            $payload = $payload['recipes'];
-        } elseif (!array_is_list($payload)) {
-            $payload = [$payload];
-        }
-        if ($payload === []) {
-            throw new HttpException(400, 'The JSON does not contain any recipes.');
-        }
-        if (count($payload) > 200) {
-            throw new HttpException(413, 'Too many recipes in one import (max 200).');
+        return $this->importPayload($this->payloadRecipes($request->json()));
+    }
+
+    /** Imports a ZIP archive written by exportAll(): recipes.json plus the pictures it references. */
+    public function importArchive(Request $request): Response
+    {
+        $replace = filter_var($request->post['replace'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        if ($replace && !$this->canClearRecipes($request)) {
+            throw new HttpException(403, 'You do not have permission to clear all recipes.');
         }
 
-        $errors = [];
-        $validated = [];
-        foreach ($payload as $i => $item) {
-            try {
-                $validated[] = $this->validator->validate(is_array($item) ? $item : [], 'recipe ' . ($i + 1) . ': ');
-            } catch (ValidationException $e) {
-                $errors += $e->errors;
+        $archive = $this->archive->read($this->archiveUpload($request));
+
+        return $this->importPayload($archive['recipes'], $archive['created'], $archive['warnings'], $replace);
+    }
+
+    /**
+     * @param list<mixed>  $recipes
+     * @param list<string> $staged  pictures stored for an archive import, removed again when the import fails
+     * @param list<string> $warnings warnings collected before the recipes are validated
+     * @param bool         $replace  whether all existing recipes are removed first
+     */
+    private function importPayload(array $recipes, array $staged = [], array $warnings = [], bool $replace = false): Response
+    {
+        $previous = $replace ? $this->recipes->all() : [];
+        $cleared = false;
+
+        try {
+            if ($recipes === []) {
+                throw new HttpException(400, 'The import does not contain any recipes.');
             }
-        }
-        if ($errors !== []) {
-            throw new ValidationException($errors);
-        }
-
-        // Pictures are named after the slug, which the repository assigns when saving: save first, then attach pictures.
-        $pictures = array_column($validated, 'image');
-        $recipes = $this->recipes->saveMany(array_map(
-            fn (array $data): Recipe => Recipe::create($this->recipes->nextId(), [...$data, 'image' => '']),
-            $validated,
-        ));
-        // nextId() only checks stored recipes; the random id space makes batch collisions negligible
-
-        $warnings = [];
-        $withPicture = [];
-        foreach ($recipes as $i => $recipe) {
-            [$path, $warning] = $this->localizer->localize($pictures[$i], $recipe->slug);
-            if ($warning !== null) {
-                $warnings[] = 'recipe ' . ($i + 1) . ': ' . $warning;
+            if (count($recipes) > 200) {
+                throw new HttpException(413, 'Too many recipes in one import (max 200).');
             }
-            if ($path !== '') {
-                $withPicture[$i] = $recipe->withImage($path);
-            }
-        }
 
-        if ($withPicture !== []) {
-            try {
-                $saved = $this->recipes->saveMany(array_values($withPicture));
-            } catch (\Throwable $e) {
-                foreach ($this->localizer->created() as $path => $slug) {
-                    $this->images->remove($path, $slug);
+            $errors = [];
+            $validated = [];
+            foreach ($recipes as $i => $item) {
+                try {
+                    $validated[] = $this->validator->validate(is_array($item) ? $item : [], 'recipe ' . ($i + 1) . ': ');
+                } catch (ValidationException $e) {
+                    $errors += $e->errors;
                 }
-                throw $e;
             }
-            foreach (array_keys($withPicture) as $n => $i) {
-                $recipes[$i] = $saved[$n];
+            if ($errors !== []) {
+                throw new ValidationException($errors);
+            }
+
+            // Everything is valid: only now is it safe to remove the existing recipes. Their pictures are removed
+            // after a successful import, so a failure can still restore the old recipes with their pictures.
+            if ($replace) {
+                $cleared = true;
+                $this->clearRecipes();
+            }
+
+            // Pictures are named after the slug, which the repository assigns when saving: save first, then attach pictures.
+            $pictures = array_column($validated, 'image');
+            $savedRecipes = $this->recipes->saveMany(array_map(
+                fn (array $data): Recipe => Recipe::create($this->recipes->nextId(), [...$data, 'image' => '']),
+                $validated,
+            ));
+            // nextId() only checks stored recipes; the random id space makes batch collisions negligible
+
+            $withPicture = [];
+            foreach ($savedRecipes as $i => $recipe) {
+                [$path, $warning] = $this->localizer->localize($pictures[$i], $recipe->slug);
+                if ($warning !== null) {
+                    $warnings[] = 'recipe ' . ($i + 1) . ': ' . $warning;
+                }
+                if ($path !== '') {
+                    $withPicture[$i] = $recipe->withImage($path);
+                }
+            }
+
+            if ($withPicture !== []) {
+                try {
+                    $saved = $this->recipes->saveMany(array_values($withPicture));
+                } catch (\Throwable $e) {
+                    foreach ($this->localizer->created() as $path => $slug) {
+                        $this->images->remove($path, $slug);
+                    }
+                    throw $e;
+                }
+                foreach (array_keys($withPicture) as $n => $i) {
+                    $savedRecipes[$i] = $saved[$n];
+                }
+            }
+
+            $response = $this->json(['imported' => count($savedRecipes), 'recipes' => $savedRecipes, 'warnings' => $warnings], 201);
+        } catch (\Throwable $e) {
+            if ($cleared) {
+                try {
+                    $this->restoreRecipes($previous);
+                } catch (\Throwable $restoreError) {
+                    error_log((string) $restoreError);
+                }
+            }
+            foreach (array_unique($staged) as $path) {
+                $this->images->remove($path);
+            }
+            throw $e;
+        }
+
+        if ($replace) {
+            foreach ($previous as $recipe) {
+                try {
+                    $this->removeImageIfUnused($recipe->image, $recipe->slug);
+                } catch (\Throwable $e) {
+                    error_log((string) $e);
+                }
             }
         }
 
-        return $this->json(['imported' => count($recipes), 'recipes' => $recipes, 'warnings' => $warnings], 201);
+        return $response;
+    }
+
+    private function canClearRecipes(Request $request): bool
+    {
+        $shared = $request->attribute('shared', []);
+        $can = is_array($shared) ? ($shared['can'] ?? null) : null;
+
+        return is_callable($can) && $can('recipe_delete');
+    }
+
+    private function clearRecipes(): void
+    {
+        foreach ($this->recipes->all() as $recipe) {
+            if (!$this->recipes->delete($recipe->id)) {
+                throw new HttpException(500, 'Could not clear the existing recipes.');
+            }
+        }
+    }
+
+    /**
+     * Puts the recipes back after a failed replace import. Recipes created by the failed attempt are removed so
+     * they cannot collide with the old slugs.
+     *
+     * @param list<Recipe> $previous
+     */
+    private function restoreRecipes(array $previous): void
+    {
+        $oldIds = array_fill_keys(array_map(static fn (Recipe $recipe): string => $recipe->id, $previous), true);
+
+        foreach ($this->recipes->all() as $recipe) {
+            if (!isset($oldIds[$recipe->id])) {
+                $this->recipes->delete($recipe->id);
+            }
+        }
+
+        if ($previous !== []) {
+            $this->recipes->saveMany($previous);
+        }
     }
 
     /**
@@ -321,9 +417,9 @@ final class RecipeController extends AbstractController
         }
     }
 
-    public function export(Request $request, string $id): Response
+    public function export(Request $request, string $idOrSlug): Response
     {
-        $recipe = $this->findOrFail($id);
+        $recipe = $this->recipes->find($idOrSlug) ?? $this->recipes->findBySlug($idOrSlug) ?? throw new NotFoundException('Recipe not found');
         $slug = trim((string) preg_replace('/[^a-z0-9]+/', '-', strtolower($recipe->title)), '-');
 
         return $this->download($this->exportable($recipe), ($slug ?: 'recipe') . '.json');
@@ -331,10 +427,39 @@ final class RecipeController extends AbstractController
 
     public function exportAll(Request $request): Response
     {
-        return $this->download(
-            ['recipes' => array_map($this->exportable(...), $this->recipes->all())],
-            'recipes.json',
-        );
+        $recipes = array_map($this->exportable(...), $this->recipes->all());
+
+        return new FileResponse($this->archive->write($recipes), 'recipes.zip', 'application/zip');
+    }
+
+    /** @return list<mixed> a single recipe object, a list of recipes or {"recipes": [...]} */
+    private function payloadRecipes(array $payload): array
+    {
+        if (isset($payload['recipes']) && is_array($payload['recipes'])) {
+            return array_values($payload['recipes']);
+        }
+
+        return array_is_list($payload) ? $payload : [$payload];
+    }
+
+    /** @return string the temporary file of the uploaded archive */
+    private function archiveUpload(Request $request): string
+    {
+        $file = $request->files['archive'] ?? null;
+        $error = is_array($file) ? ($file['error'] ?? UPLOAD_ERR_NO_FILE) : UPLOAD_ERR_NO_FILE;
+        if ($error === UPLOAD_ERR_INI_SIZE || $error === UPLOAD_ERR_FORM_SIZE) {
+            throw new HttpException(413, 'The archive is too large.');
+        }
+
+        $tmp = is_array($file) ? (string) ($file['tmp_name'] ?? '') : '';
+        if ($error !== UPLOAD_ERR_OK || $tmp === '' || !is_file($tmp)) {
+            throw new HttpException(400, 'No archive was uploaded.');
+        }
+        if (($file['size'] ?? filesize($tmp)) > self::MAX_ARCHIVE_BYTES) {
+            throw new HttpException(413, 'The archive is larger than 512 MB.');
+        }
+
+        return $tmp;
     }
 
     /**

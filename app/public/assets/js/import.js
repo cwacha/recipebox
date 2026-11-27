@@ -4,6 +4,7 @@
     const SPINNER = '<span class="spinner-border spinner-border-sm"></span> ';
     const CSRF = $('meta[name="csrf-token"]').attr('content') || '';
     let pendingRecipe = null;
+    let pendingArchive = null;
 
     // progress of a URL import
     let running = false;
@@ -15,9 +16,43 @@
 
     function readFile(file) {
         if (!file) return;
+
+        if (/\.zip$/i.test(file.name)) {
+            pendingArchive = file;
+            $('#importText').val('');
+            $('#importFileName').text('Selected archive: ' + file.name).removeClass('d-none');
+            $('#replaceWrap').removeClass('d-none');
+            return;
+        }
+
+        pendingArchive = null;
+        $('#importFileName').addClass('d-none');
+        $('#replaceWrap').addClass('d-none');
+        $('#importReplace').prop('checked', false);
         const reader = new FileReader();
         reader.onload = function () { $('#importText').val(reader.result); };
         reader.readAsText(file);
+    }
+
+    function uploadArchive(file, $btn, $err) {
+        const data = new FormData();
+        data.append('archive', file, file.name);
+        if ($('#importReplace').is(':checked')) {
+            data.append('replace', '1');
+        }
+
+        $.ajax({
+            url: R.base + '/api/recipes/import/archive',
+            method: 'POST',
+            data: data,
+            processData: false,
+            contentType: false,
+            dataType: 'json',
+            headers: {'X-CSRF-Token': CSRF}
+        }).done(afterImport).fail(function (xhr) {
+            R.showAlert($err, R.errorMessages(xhr));
+            $btn.prop('disabled', false).html('<i class="bi bi-upload"></i> Import');
+        });
     }
 
     function formatMinutes(min) {
@@ -262,7 +297,17 @@
 
     /* ---- page setup ---------------------------------------------------------------- */
 
-    $('#importFile').on('change', function () { readFile(this.files[0]); });
+    $('#importFile').on('change', function () {
+        readFile(this.files[0]);
+        this.value = '';
+    });
+
+    $('#importText').on('input', function () {
+        pendingArchive = null;
+        $('#importFileName').addClass('d-none');
+        $('#replaceWrap').addClass('d-none');
+        $('#importReplace').prop('checked', false);
+    });
 
     $('#importUrl').on('input', function () {
         pendingRecipe = null;
@@ -277,6 +322,16 @@
 
     $('#btnDoImport').on('click', function () {
         const $err = $('#importError').addClass('d-none');
+
+        if (pendingArchive !== null) {
+            if ($('#importReplace').is(':checked') && !window.confirm('Delete all existing recipes and their pictures before importing?')) {
+                return;
+            }
+            const $archiveButton = $(this).prop('disabled', true).html(SPINNER + 'Importing…');
+            uploadArchive(pendingArchive, $archiveButton, $err);
+            return;
+        }
+
         let payload;
         try {
             payload = JSON.parse($('#importText').val());
